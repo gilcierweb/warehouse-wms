@@ -17,10 +17,29 @@ API REST + WebSocket em tempo real para o sistema de gestão de armazém.
 | Runtime       | Tokio async                             |
 
 ---
+```shell
+cargo add actix-web
+cargo add serde
+cargo add actix-cors
+cargo add diesel
+cargo add diesel --features "postgres"
+cargo install diesel_cli --no-default-features --features postgres
+export DATABASE_URL=postgres://postgres:gil123@localhost:5432/warehouse_wms_development
+diesel setup
+
+diesel migration generate create_users
+diesel migration generate create_profiles
+diesel migration generate create_alert_configs
+diesel migration generate create_slots
+diesel migration generate create_movements
+
+diesel migration run
+diesel migration redo
+```
 
 ## Estrutura do Projeto
 
-```
+```shell
 wms-backend/
 ├── src/
 │   ├── main.rs                  # Bootstrap: HTTP server, CORS, pool, hub

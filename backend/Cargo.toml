@@ -2,5 +2,10 @@
 name = "backend"
 version = "0.1.0"
 edition = "2024"
+authors = ["GilcierWeb"]
 
 [dependencies]
+actix-cors = "0.7.1"
+actix-web = "4.13.0"
+diesel = { version = "2.3.7", features = ["postgres", "r2d2", "chrono", "uuid", "ipnet-address","network-address", "numeric", "64-column-tables"] }
+serde = { version = "1.0.228", features = ["derive"] }
