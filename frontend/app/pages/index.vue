@@ -143,6 +143,9 @@ watch(() => globalStats.value.pct, (pct) => {
 })
 
 function onSelectSlot(slot: Slot) {
+  if (slot.status === 'occupied') {
+    push({ type: 'warning', message: `Posição ${slot.id} já está em uso${slot.sku ? ` - SKU: ${slot.sku}` : ''}` })
+  }
   selectedSlot.value = slot
 }
 

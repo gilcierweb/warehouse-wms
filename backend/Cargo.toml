@@ -2,23 +2,30 @@
 name = "backend"
 version = "0.1.0"
 edition = "2024"
-authors = ["GilcierWeb"]
+authors = ["GilcierWeb", "GilcierWeb <gilcierweb@gmail.com>"]
+
+
+[profile.release]
+lto = true
+opt-level = 3   
+panic = "abort"
+strip = "symbols"
+codegen-units = 1
 
 [dependencies]
 actix-cors = "0.7.1"
 actix-web = "4.13.0"
+actix-ws = "0.4.0"
+actix-rt = "2.11.0"
 argon2 = "0.5.3" 
 chrono = { version = "0.4.44", features = ["serde"] }
 diesel = { version = "2.3.7", features = ["postgres", "r2d2", "chrono", "uuid", "ipnet-address","network-address", "numeric", "64-column-tables"] }
 rand = "0.8"
-
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
 jsonwebtoken = "8.0.0"
 uuid = { version = "1.22.0", features = ["v4", "serde"] }
 tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 futures-util = "0.3.32"
-actix-ws = "0.4.0"
-actix-rt = "2.11.0"
 thiserror = "2.0.18"
 rust_xlsxwriter = "0.94.0"

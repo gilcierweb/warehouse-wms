@@ -1,0 +1,41 @@
+# Build stage - Node Alpine
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Instalar pnpm
+RUN npm install -g pnpm
+
+# Copiar arquivos de dependências
+COPY package.json pnpm-lock.yaml ./
+
+# Instalar dependências
+RUN pnpm install --frozen-lockfile
+
+# Copiar código fonte
+COPY . .
+
+# Build de produção
+RUN pnpm run build
+
+# Runtime stage - Alpine mínima com Node
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copiar apenas arquivos necessários do builder
+COPY --from=builder /app/.output ./.output
+COPY --from=builder /app/package.json ./
+
+# Variáveis de ambiente padrão
+ENV NUXT_PORT=3000 \
+    API_BASE=http://backend:8080 \
+    WS_BASE=ws://backend:8080 \
+    NODE_ENV=production
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:3000 || exit 1
+
+CMD ["node", ".output/server/index.mjs"]
