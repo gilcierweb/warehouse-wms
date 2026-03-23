@@ -26,11 +26,9 @@ pub struct User {
     pub last_sign_in_at: Option<chrono::NaiveDateTime>,   
     pub current_sign_in_ip: Option<String>,
     pub last_sign_in_ip: Option<String>,
-    pub status: Option<bool>,
     pub role: i32,
-    // #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<bool>,
     pub created_at: NaiveDateTime,
-    // #[serde(skip_serializing_if = "Option::is_none")]
     pub updated_at: NaiveDateTime,
 }
 

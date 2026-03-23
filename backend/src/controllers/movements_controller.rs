@@ -95,7 +95,7 @@ pub async fn list_movements(
     .await
     .map_err(|_| actix_web::error::ErrorInternalServerError("Database error"))?;
 
-    let movements = result?;
+    let movements = result.map_err(|_| actix_web::error::ErrorInternalServerError("Database query error"))?;
     Ok(HttpResponse::Ok().json(movements))
 }
 

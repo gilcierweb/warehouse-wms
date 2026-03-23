@@ -1,11 +1,12 @@
 use actix_cors::Cors;
-use actix_web::{App, HttpResponse, HttpServer, Responder, Result, http::header, get, middleware, web};
+use actix_web::{App, HttpResponse, HttpServer, Responder, Result, http::header, get, web};
 use serde::Serialize;
 use std::env;
 use std::string::String;
 
 // Import modules is required for use crate::mymod::
 mod config;
+mod errors;
 mod db;
 mod routes;
 mod controllers;
@@ -13,15 +14,11 @@ mod models;
 mod repositories;
 mod auth;
 mod ws;
+mod middleware;
 
 #[derive(Serialize)]
 pub struct Response {
     pub message: String,
-}
-
-#[get("/hello/{name}")]
-async fn greet(name: web::Path<String>) -> impl Responder {
-    format!("Hello {name}!")
 }
 
 #[get("/health")]
@@ -70,11 +67,10 @@ async fn main() -> std::io::Result<()> {
                     .supports_credentials()
                     .max_age(3600),
             )
-            .service(greet)
             .service(healthcheck)
             .default_service(web::route().to(not_found))
             .wrap(actix_web::middleware::Logger::default())
-            .wrap(middleware::Compress::default())
+            .wrap(actix_web::middleware::Compress::default())
     })
     .bind((host, port))?
     .run()

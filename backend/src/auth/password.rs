@@ -2,18 +2,18 @@ use argon2::{
     password_hash::{PasswordHasher, PasswordVerifier, SaltString, PasswordHash},
     Argon2,
 };
-use rand::rng;
+use rand::rngs::OsRng;
 
 pub async fn hash() {
-    // placeholder if you need async later
+    // placeholder
 }
 
 pub async fn verify_password() {
-    // placeholder if you need async later
+    // placeholder
 }
 
 pub fn password_hash(password: String) -> String {
-    let mut rng = rng();
+    let mut rng = OsRng;
 
     let salt = SaltString::generate(&mut rng);
 

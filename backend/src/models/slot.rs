@@ -37,3 +37,30 @@ pub struct NewSlot {
     pub sku: Option<String>,
     pub updated_by: Option<Uuid>,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable, AsChangeset)]
+#[diesel(table_name = slots)]
+pub struct UpdateSlot {
+    pub status: String,
+    pub sku: Option<String>,
+    pub updated_at: chrono::NaiveDateTime,
+    pub updated_by: Option<Uuid>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct StreetStat {
+    pub name: String,
+    pub occupied: i64,
+    pub free: i64,
+    pub total: i64,
+    pub pct: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WarehouseStats {
+    pub total: i64,
+    pub occupied: i64,
+    pub free: i64,
+    pub pct: f64,
+    pub streets: Vec<StreetStat>,
+}
