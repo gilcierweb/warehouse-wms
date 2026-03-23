@@ -5,11 +5,16 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+// Role constants
+pub const ROLE_ADMIN: i32 = 1;
+pub const ROLE_OPERATOR: i32 = 2;
+pub const ROLE_VIEWER: i32 = 3;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub:      Uuid,
     pub username: String,
-    pub role:     String,
+    pub role:     i32,
     pub exp:      usize,
 }
 
@@ -22,12 +27,12 @@ impl AuthUser {
         &self.0
     }
 
-    pub fn require_role(&self, role: &str) -> Result<(), AppError> {
-        if self.0.role == "admin" || self.0.role == role {
+    pub fn require_role(&self, role: i32) -> Result<(), AppError> {
+        if self.0.role == ROLE_ADMIN || self.0.role == role {
             Ok(())
         } else {
             Err(AppError::Forbidden(format!(
-                "Requer papel '{}', você possui '{}'",
+                "Required role '{}', you have '{}'",
                 role, self.0.role
             )))
         }
@@ -56,8 +61,8 @@ fn extract_claims(req: &HttpRequest) -> Result<Claims, AppError> {
         .ok_or(AppError::Unauthorized)?;
 
     let secret = req
-        .app_data::<web::Data<String>>()
-        .map(|s| s.get_ref().clone())
+        .app_data::<web::Data<crate::config::AppConfig>>()
+        .map(|c| c.jwt_secret.clone())
         .unwrap_or_default();
 
     let key = DecodingKey::from_secret(secret.as_bytes());
@@ -71,7 +76,7 @@ fn extract_claims(req: &HttpRequest) -> Result<Claims, AppError> {
 pub fn create_token(
     user_id:  Uuid,
     username: String,
-    role:     String,
+    role:     i32,
     secret:   &str,
     expiry_h: i64,
 ) -> Result<String, AppError> {

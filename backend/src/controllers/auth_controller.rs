@@ -1,13 +1,13 @@
 use crate::{
+    auth::password::{password_hash, verify},
     config::AppConfig,
-    db::DbPool,
+    db::database::DBPool,
     errors::{AppError, AppResult},
-    middleware::create_token,
-    models::{NewUser, User},
-    schema::users,
+    middleware::auth::{create_token, AuthUser, ROLE_OPERATOR},
+    models::user::{NewUser, User},
+    db::schema::users,
 };
-use actix_web::{web, HttpResponse};
-use bcrypt::{hash, verify, DEFAULT_COST};
+use actix_web::{web, HttpResponse, post, get};
 use chrono::Utc;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -26,7 +26,7 @@ pub struct RegisterRequest {
     pub username: String,
     pub email:    String,
     pub password: String,
-    pub role:     Option<String>,
+    pub role:     Option<i32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -34,14 +34,15 @@ pub struct AuthResponse {
     pub token:    String,
     pub user_id:  Uuid,
     pub username: String,
-    pub role:     String,
+    pub role:     i32,
 }
 
 // ── Handlers ─────────────────────────────────────────────────
 
-/// POST /api/auth/login
+// POST /api/auth/login
+#[post("/login")]
 pub async fn login(
-    pool:   web::Data<DbPool>,
+    pool:   web::Data<DBPool>,
     config: web::Data<AppConfig>,
     body:   web::Json<LoginRequest>,
 ) -> AppResult<HttpResponse> {
@@ -52,7 +53,7 @@ pub async fn login(
     let user: User = web::block(move || {
         users::table
             .filter(users::username.eq(&username))
-            .filter(users::active.eq(true))
+            .filter(users::status.eq(true))
             .select(User::as_select())
             .first(&mut conn)
             .optional()
@@ -62,8 +63,7 @@ pub async fn login(
     .map_err(AppError::Database)?
     .ok_or(AppError::Unauthorized)?;
 
-    let valid = verify(&password, &user.password)
-        .map_err(|e| AppError::Internal(e.to_string()))?;
+    let valid = verify(password, user.encrypted_password.clone());
 
     if !valid {
         return Err(AppError::Unauthorized);
@@ -72,7 +72,7 @@ pub async fn login(
     let token = create_token(
         user.id,
         user.username.clone(),
-        user.role.clone(),
+        user.role,
         &config.jwt_secret,
         config.jwt_expiry_hours,
     )?;
@@ -85,28 +85,32 @@ pub async fn login(
     }))
 }
 
-/// POST /api/auth/register  (admin only in production — open for setup)
+// POST /api/auth/register (admin only in production — open for setup)
+#[post("/register")]
 pub async fn register(
-    pool: web::Data<DbPool>,
+    pool: web::Data<DBPool>,
     body: web::Json<RegisterRequest>,
 ) -> AppResult<HttpResponse> {
     let mut conn = pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
 
-    let password_hash = hash(&body.password, DEFAULT_COST)
-        .map_err(|e| AppError::Internal(e.to_string()))?;
+    let encrypted_password = password_hash(body.password.clone());
 
-    let now  = Utc::now();
-    let role = body.role.clone().unwrap_or_else(|| "operator".to_string());
+    let now = Utc::now().naive_utc();
+    let role = body.role.unwrap_or(ROLE_OPERATOR);
 
     let new_user = NewUser {
         id:         Uuid::new_v4(),
         username:   body.username.clone(),
         email:      body.email.clone(),
-        password:   password_hash,
+        encrypted_password,
         role,
-        active:     true,
+        status:     Some(true),
         created_at: now,
         updated_at: now,
+        current_sign_in_at: None,
+        last_sign_in_at: None,
+        current_sign_in_ip: None,
+        last_sign_in_ip: None,
     };
 
     let user: User = web::block(move || {
@@ -120,7 +124,7 @@ pub async fn register(
     .map_err(|e| match e {
         diesel::result::Error::DatabaseError(
             diesel::result::DatabaseErrorKind::UniqueViolation, _
-        ) => AppError::Conflict("Usuário ou e-mail já existe".to_string()),
+        ) => AppError::Conflict("Username or email already exists".to_string()),
         other => AppError::Database(other),
     })?;
 
@@ -132,8 +136,9 @@ pub async fn register(
     })))
 }
 
-/// GET /api/auth/me
-pub async fn me(user: crate::middleware::AuthUser) -> AppResult<HttpResponse> {
+// GET /api/auth/me
+#[get("/me")]
+pub async fn me(user: AuthUser) -> AppResult<HttpResponse> {
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "id":       user.claims().sub,
         "username": user.claims().username,

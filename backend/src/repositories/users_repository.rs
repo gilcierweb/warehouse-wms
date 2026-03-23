@@ -50,11 +50,17 @@ impl BaseRepository<User> for UserRepository {
             .map(|addr| addr.to_string());
 
         let new_user = NewUser {
-            encrypted_password: password_hash(entity.encrypted_password.clone()),
+            id: Uuid::new_v4(),
+            username: entity.username.clone(),
             email: entity.email.clone(),
-            current_sign_in_at: Some(Utc::now().naive_utc()), // Default timestamp
+            encrypted_password: password_hash(entity.encrypted_password.clone()),
+            role: entity.role,
+            status: Some(true),
+            created_at: Utc::now().naive_utc(),
+            updated_at: Utc::now().naive_utc(),
+            current_sign_in_at: Some(Utc::now().naive_utc()),
             current_sign_in_ip: ip.clone(),
-            last_sign_in_at: Some(Utc::now().naive_utc()), // Default timestamp
+            last_sign_in_at: Some(Utc::now().naive_utc()),
             last_sign_in_ip: ip.clone(),
         };
 

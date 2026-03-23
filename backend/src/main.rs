@@ -4,6 +4,8 @@ use serde::Serialize;
 use std::env;
 use std::string::String;
 
+use crate::config::AppConfig;
+
 // Import modules is required for use crate::mymod::
 mod config;
 mod errors;
@@ -39,24 +41,17 @@ async fn not_found() -> Result<HttpResponse> {
 #[actix_web::main] // or #[tokio::main]
 async fn main() -> std::io::Result<()> {
     
+    let config = AppConfig::from_env();
+    let config_data = web::Data::new(config.clone());
+    
     let api_db = db::database::Database::new();
     let app_data = web::Data::new(api_db);
     let ws_hub = web::Data::new(ws::server::WsHub::new());
         
-    let port: u16 = env::var("PORT")
-        .unwrap_or_else(|_| "8080".to_string())
-        .parse()
-        .expect("PORT must be a number");
-
-    let host = env::var("HOST")
-        .unwrap_or_else(|_| "0.0.0.0".to_string())
-        .parse::<String>()
-        .expect("HOST must be a number");
-
+    let port = config.port;
+    let host = config.host.clone();
     let frontend_url: String = env::var("FRONTEND_URL")
-        .unwrap_or_else(|_| "http://localhost:3000".to_string())
-        .parse::<String>()
-        .expect("FRONTEND_URL is not set");
+        .unwrap_or_else(|_| "http://localhost:3000".to_string());
 
     println!("Running in http://localhost:{}", port);
 
@@ -74,6 +69,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(actix_web::middleware::Logger::default())
             .wrap(actix_web::middleware::Compress::default())
             .app_data(app_data.clone())
+            .app_data(config_data.clone())
             .app_data(ws_hub.clone())
             .configure(routes::router::config)
             .service(healthcheck)
