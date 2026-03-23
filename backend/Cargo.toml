@@ -7,5 +7,11 @@ authors = ["GilcierWeb"]
 [dependencies]
 actix-cors = "0.7.1"
 actix-web = "4.13.0"
+argon2 = "0.5.3" 
+chrono = { version = "0.4.44", features = ["serde"] }
 diesel = { version = "2.3.7", features = ["postgres", "r2d2", "chrono", "uuid", "ipnet-address","network-address", "numeric", "64-column-tables"] }
+rand = "0.10.0"
+
 serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.22.0", features = ["v4", "serde"] }

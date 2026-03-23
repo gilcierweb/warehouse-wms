@@ -23,6 +23,12 @@ cargo add serde
 cargo add actix-cors
 cargo add diesel
 cargo add diesel --features "postgres"
+cargo add chrono
+cargo add uuid
+cargo add argon2
+cargo add r2d2
+cargo add rand
+
 cargo install diesel_cli --no-default-features --features postgres
 export DATABASE_URL=postgres://postgres:gil123@localhost:5432/warehouse_wms_development
 diesel setup

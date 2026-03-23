@@ -10,6 +10,8 @@ mod db;
 mod routes;
 mod controllers;
 mod models;
+mod repositories;
+mod auth;
 mod ws;
 
 #[derive(Serialize)]
@@ -62,7 +64,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 Cors::default()
                     .allowed_origin(&frontend_url)
-                    .allowed_methods(vec!["GET", "POST"])
+                    .allowed_methods(vec!["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
                     .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
                     .allowed_header(header::CONTENT_TYPE)
                     .supports_credentials()
