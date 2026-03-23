@@ -142,13 +142,16 @@ const pctClass = computed(() => {
   border-color: var(--green);
 }
 .slot--occupied {
-  background: var(--red-bg);
-  color: var(--red);
-  border-color: var(--red-dim);
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #b91c1c;
+  font-weight: 600;
+  box-shadow: 0 0 4px rgba(220, 38, 38, 0.3);
 }
 .slot--occupied:hover {
-  background: #2d0909;
-  border-color: var(--red);
+  background: #b91c1c;
+  border-color: #991b1b;
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.5);
 }
 .slot--selected {
   outline: 1.5px solid #fff;

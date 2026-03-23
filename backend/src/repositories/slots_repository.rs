@@ -30,7 +30,7 @@ impl BaseRepository<Slot> for SlotRepository {
 
     fn find(&self, slot_id: &Uuid) -> Option<Slot> {
         let slot = slots.find(slot_id)
-            .get_result::<Slot>(&mut self.connection.pool.get().unwrap())
+            .get_result(&mut self.connection.pool.get().unwrap())
             .expect("Error loading Slot by id");
         Some(slot)
     }

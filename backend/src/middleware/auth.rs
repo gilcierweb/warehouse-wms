@@ -1,3 +1,4 @@
+use crate::errors::AppError;
 use actix_web::{dev::Payload, web, FromRequest, HttpRequest};
 use futures_util::future::{ready, Ready};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};

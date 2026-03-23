@@ -6,21 +6,51 @@ export const useWarehouseApi = () => {
 
   // ── Slots ──────────────────────────────────────────────
   async function fetchSlots(): Promise<Slot[]> {
-    return $fetch<Slot[]>(`${base}/api/slots`)
+    try {
+      return await $fetch<Slot[]>(`${base}/api/slots`)
+    } catch (error: any) {
+      // Se for erro 404, tentar extrair corpo da resposta
+      if (error.name === 'FetchError' && error.response?.status === 404) {
+        throw error.response._data || error
+      }
+      throw error
+    }
   }
 
   async function entry(slotId: string, sku?: string, note?: string) {
-    return $fetch<Slot>(`${base}/api/slots/${encodeURIComponent(slotId)}/entry`, {
+    console.log('API: Chamando entry para slot', slotId)
+    const response = await fetch(`${base}/api/slots/${encodeURIComponent(slotId)}/entry`, {
       method: 'POST',
-      body: { sku, note },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sku, note }),
     })
+  
+    if (response.ok) {
+      const result = await response.json() as Slot
+      console.log('API: Entry sucesso', result)
+      return result
+    } else {
+      // Para erros, tentar extrair corpo da resposta
+      const errorData = await response.json().catch(() => ({}))
+      console.log('API: Entry erro', errorData)
+      throw errorData
+    }
   }
 
   async function exit(slotId: string, note?: string) {
-    return $fetch<Slot>(`${base}/api/slots/${encodeURIComponent(slotId)}/exit`, {
+    const response = await fetch(`${base}/api/slots/${encodeURIComponent(slotId)}/exit`, {
       method: 'POST',
-      body: { note },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note }),
     })
+  
+    if (response.ok) {
+      return await response.json() as Slot
+    } else {
+      // Para erros, tentar extrair corpo da resposta
+      const errorData = await response.json().catch(() => ({}))
+      throw errorData
+    }
   }
 
   // ── Stats ──────────────────────────────────────────────

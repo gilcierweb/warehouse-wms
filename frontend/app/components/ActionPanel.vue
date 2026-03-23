@@ -103,16 +103,52 @@ function formatDate(iso: string) {
 
 async function handleEntry() {
   if (!ADDR_RE.test(location.value)) return
+  
   loading.value = true
+  console.log('ACTION PANEL: Iniciando handleEntry para', location.value)
+  
   try {
     const updated = await api.entry(location.value, sku.value || undefined)
+    
+    // Verificar status antes de atualizar
+    const currentSlot = store.getSlot(location.value)
+    const shouldNotify = !currentSlot || currentSlot.status !== updated.status
+    
     store.setSlot(updated)
     lastAction.value = { slotId: location.value, type: 'entry' }
-    push({ type: 'success', message: `Entrada registrada: ${location.value}` })
+    
+    push({ type: 'success', message: `Entrada registrada em ${location.value}${updated.sku ? ` - SKU: ${updated.sku}` : ''}` })
+    
     sku.value = ''
     emit('done')
   } catch (e: any) {
-    push({ type: 'danger', message: e?.data?.message ?? 'Erro ao registrar entrada' })
+    console.log('ACTION PANEL: Erro no entry', e)
+    // Com fetch nativo, o erro agora é o corpo da resposta diretamente
+    if (e?.code === 'SLOT_OCCUPIED') {
+      console.log('ACTION PANEL: Tratando SLOT_OCCUPIED')
+      // Forçar atualização local imediata
+      const existingSlot = store.getSlot(location.value)
+      const shouldNotify = !existingSlot || existingSlot.status !== 'occupied'
+      
+      if (existingSlot && shouldNotify) {
+        store.setSlot({ ...existingSlot, status: 'occupied', updatedAt: new Date().toISOString() })
+        push({ type: 'warning', message: `Posição já ocupada: ${location.value}` })
+      }
+      
+      // Tentar buscar estado real do servidor
+      try {
+        const slots = await api.fetchSlots()
+        const currentSlot = slots.find((s: Slot) => s.id === location.value)
+        if (currentSlot) {
+          store.setSlot(currentSlot)
+        }
+      } catch {
+        // Manter estado local se falhar busca
+      }
+    } else {
+      const errorMessage = e?.message || e?.error || 'Erro ao registrar entrada'
+      push({ type: 'danger', message: errorMessage })
+    }
   } finally {
     loading.value = false
   }
@@ -123,13 +159,44 @@ async function handleExit() {
   loading.value = true
   try {
     const updated = await api.exit(location.value, sku.value || undefined)
+    
+    // Verificar se o slot já está com o mesmo status (evitar duplicação)
+    const currentSlot = store.getSlot(location.value)
+    const shouldNotify = !currentSlot || currentSlot.status !== updated.status
+    
     store.setSlot(updated)
     lastAction.value = { slotId: location.value, type: 'exit' }
-    push({ type: 'success', message: `Saída registrada: ${location.value}` })
+    
+    push({ type: 'info', message: `Saída registrada em ${location.value}` })
+    
     sku.value = ''
     emit('done')
   } catch (e: any) {
-    push({ type: 'danger', message: e?.data?.message ?? 'Erro ao registrar saída' })
+    // Com fetch nativo, o erro agora é o corpo da resposta diretamente
+    if (e?.code === 'SLOT_FREE') {
+      // Forçar atualização local imediata
+      const existingSlot = store.getSlot(location.value)
+      const shouldNotify = !existingSlot || existingSlot.status !== 'free'
+      
+      if (existingSlot && shouldNotify) {
+        store.setSlot({ ...existingSlot, status: 'free', updatedAt: new Date().toISOString() })
+        push({ type: 'warning', message: `Posição já livre: ${location.value}` })
+      }
+      
+      // Tentar buscar estado real do servidor
+      try {
+        const slots = await api.fetchSlots()
+        const currentSlot = slots.find((s: Slot) => s.id === location.value)
+        if (currentSlot) {
+          store.setSlot(currentSlot)
+        }
+      } catch {
+        // Manter estado local se falhar busca
+      }
+    } else {
+      const errorMessage = e?.message || e?.error || 'Erro ao registrar saída'
+      push({ type: 'danger', message: errorMessage })
+    }
   } finally {
     loading.value = false
   }

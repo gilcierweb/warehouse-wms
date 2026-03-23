@@ -151,9 +151,19 @@ onMounted(async () => {
   try {
     const slots = await api.fetchSlots()
     bulkLoad(slots)
+    
+    // Inicializar WebSocket
+    const ws = useWarehouseWS()
+    ws.connect()
   } catch {
     push({ type: 'warning', message: 'API offline — usando dados locais de demonstração' })
   }
+})
+
+// Limpar WebSocket ao sair da página
+onUnmounted(() => {
+  const ws = useWarehouseWS()
+  ws.disconnect()
 })
 </script>
 

@@ -39,6 +39,10 @@ async fn not_found() -> Result<HttpResponse> {
 #[actix_web::main] // or #[tokio::main]
 async fn main() -> std::io::Result<()> {
     
+    let api_db = db::database::Database::new();
+    let app_data = web::Data::new(api_db);
+    let ws_hub = web::Data::new(ws::server::WsHub::new());
+        
     let port: u16 = env::var("PORT")
         .unwrap_or_else(|_| "8080".to_string())
         .parse()
@@ -67,10 +71,13 @@ async fn main() -> std::io::Result<()> {
                     .supports_credentials()
                     .max_age(3600),
             )
-            .service(healthcheck)
-            .default_service(web::route().to(not_found))
             .wrap(actix_web::middleware::Logger::default())
             .wrap(actix_web::middleware::Compress::default())
+            .app_data(app_data.clone())
+            .app_data(ws_hub.clone())
+            .configure(routes::router::config)
+            .service(healthcheck)
+            .default_service(web::route().to(not_found))
     })
     .bind((host, port))?
     .run()

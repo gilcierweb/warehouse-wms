@@ -45,21 +45,62 @@ export const useWarehouseStore = () => {
   })
 
   function getSlot(id: string): Slot | undefined {
-    return slots.value[id]
+    // Tentar encontrar por ID primeiro
+    let slot = slots.value[id]
+    
+    // Se não encontrar por ID, tentar por address
+    if (!slot) {
+      slot = Object.values(slots.value).find(s => (s.address || s.id) === id)
+    }
+    
+    return slot
   }
 
-  function setSlot(slot: Slot) {
-    slots.value[slot.id] = slot
+  function setSlot(slot: any) {
+    // Mapear campos da API para o formato do frontend
+    const mappedSlot: Slot = {
+      id: slot.address || slot.id,
+      street: slot.street,
+      position: slot.position,
+      lane: slot.lane,
+      status: slot.status || 'free',
+      updatedAt: slot.updatedAt || slot.updated_at || new Date().toISOString(),
+      updatedBy: slot.updatedBy || slot.updated_by,
+      sku: slot.sku
+    }
+    slots.value[mappedSlot.id] = mappedSlot
   }
 
-  function bulkLoad(incoming: Slot[]) {
-    for (const s of incoming) slots.value[s.id] = s
+  function bulkLoad(incoming: any[]) {
+    for (const s of incoming) {
+      // Mapear campos da API para o formato do frontend
+      const slot: Slot = {
+        id: s.address || s.id,
+        street: s.street,
+        position: s.position,
+        lane: s.lane,
+        status: s.status || 'free',
+        updatedAt: s.updatedAt || new Date().toISOString(),
+        updatedBy: s.updatedBy,
+        sku: s.sku
+      }
+      slots.value[slot.id] = slot
+    }
   }
 
   function slotsByStreet(street: string, lane: string): Slot[] {
     return Array.from({ length: POSITIONS }, (_, i) => {
       const id = `${street}-${i + 1}-${lane}`
-      return slots.value[id] ?? { id, street, position: i + 1, lane, status: 'free', updatedAt: '' }
+      const existingSlot = slots.value[id]
+      
+      return existingSlot ?? { 
+        id, 
+        street, 
+        position: i + 1, 
+        lane, 
+        status: 'free', 
+        updatedAt: new Date().toISOString() 
+      }
     })
   }
 

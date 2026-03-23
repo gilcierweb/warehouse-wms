@@ -1,4 +1,4 @@
-use actix_web::{get, HttpResponse, post, web, Error, error::ErrorInternalServerError};
+use actix_web::{get, post, web, HttpResponse, Error, error::{ErrorInternalServerError, ErrorNotFound}};
 use chrono::Utc;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use crate::db::database::Database;
 use crate::db::schema::{movements, slots};
 use crate::models::{movement::NewMovement, slot::Slot, slot::StreetStat, slot::UpdateSlot, slot::WarehouseStats};
+use crate::repositories::slots_repository::SlotRepository;
+use crate::repositories::base_repository::BaseRepository;
 use crate::ws::server::{HubData, WsEvent};
 
 // ── Request / Response DTOs ───────────────────────────────────
@@ -32,7 +34,7 @@ pub struct SlotFilter {
 /// GET /api/slots
 #[get("/slots")]
 pub async fn list_slots(
-    db:   web::Data<Database>,
+    db: web::Data<Database>,
     filter: web::Query<SlotFilter>,
 ) -> Result<HttpResponse, Error> {
     let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError("Database connection error"))?;
@@ -61,11 +63,12 @@ pub async fn list_slots(
 /// GET /api/slots/:address  (ex: /api/slots/A-5-N2)
 #[get("/slots/{address}")]
 pub async fn get_slot(
-    db:    web::Data<Database>,
+    db: web::Data<Database>,
     address: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
     let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError("Database connection error"))?;
     let addr = address.into_inner().to_uppercase();
+    let addr_clone = addr.clone();
 
     let result = web::block(move || {
         slots::table
@@ -79,70 +82,94 @@ pub async fn get_slot(
     let slot = result.map_err(|_| ErrorInternalServerError("Database query error"))?;
     match slot {
         Some(s) => Ok(HttpResponse::Ok().json(s)),
-        None => Ok(HttpResponse::NotFound().body(format!("Slot '{}' não encontrado", address))),
+        None => Ok(HttpResponse::NotFound().body(format!("Slot '{}' não encontrado", addr_clone))),
     }
 }
 
 /// POST /api/slots/:address/entry  (ex: /api/slots/A-5-N2/entry)
 #[post("/slots/{address}/entry")]
 pub async fn entry(
-    db:    web::Data<Database>,
-    hub:     HubData,
+    db: web::Data<Database>,
+    hub: HubData,
     address: web::Path<String>,
-    body:    web::Json<EntryRequest>,
+    body: web::Json<EntryRequest>,
 ) -> Result<HttpResponse, Error> {
     let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError("Database connection error"))?;
     let addr = address.into_inner().to_uppercase();
     
     // TODO: Add authentication when middleware is implemented
-    let user_id = uuid::Uuid::new_v4(); // Placeholder
-    let operator_name = "System".to_string(); // Placeholder
+    let user_id: Option<uuid::Uuid> = None;
+    let operator_name = "System".to_string();
     let sku = body.sku.clone();
     let note = body.note.clone();
-    let sku2 = sku.clone();
-
+    
     let result = web::block(move || {
-        conn.transaction::<_, diesel::result::Error, _>(|conn| {
-            // 1. Busca pelo endereço legível → obtém o UUID interno
-            let slot: Slot = slots::table
-                .filter(slots::address.eq(&addr))
-                .first::<Slot>(conn)?;
+        // 1. Busca slot
+        let slot = match slots::table
+            .filter(slots::address.eq(&addr))
+            .first::<Slot>(&mut conn) {
+                Ok(slot) => slot,
+                Err(e) => {
+                    println!("DEBUG: Erro ao buscar slot: {}", e);
+                    return Err(e);
+                }
+            };
 
-            if slot.status == "occupied" {
-                return Err(diesel::result::Error::RollbackTransaction);
-            }
+        // 2. Verifica se está livre
+        if slot.status != "free" {
+            println!("DEBUG: Slot não está livre: {}", slot.status);
+            return Err(diesel::result::Error::NotFound);
+        }
 
-            // 2. Atualiza pelo UUID (PK estável)
-            let updated: Slot = diesel::update(slots::table.find(slot.id))
-                .set(&UpdateSlot {
-                    status:     "occupied".to_string(),
-                    sku:        sku2,
-                    updated_at: Utc::now().naive_utc(),
-                    updated_by: Some(user_id),
-                })
-                .get_result::<Slot>(conn)?;
+        // 3. Atualiza status para occupied com SKU e timestamp
+        println!("DEBUG: Atualizando slot ID: {}", slot.id);
+        let updated: Slot = diesel::update(slots::table.find(slot.id))
+            .set((
+                slots::status.eq("occupied"),
+                slots::sku.eq(&sku),
+                slots::updated_at.eq(diesel::dsl::now),
+                slots::updated_by.eq(user_id)
+            ))
+            .get_result(&mut conn)?;
 
-            // 3. Insere movement com FK UUID + snapshot do endereço
-            diesel::insert_into(movements::table)
-                .values(&NewMovement {
-                    slot_id: Some(slot.id),
-                    movement_type: 1, // 1=entry
-                    operator_id: Some(user_id),
-                    operator_name: Some(operator_name),
-                    sku: sku,
-                    note: note,
-                })
-                .execute(conn)?;
+        // 4. Insere movement
+        println!("DEBUG: Inserindo movement para slot ID: {}", slot.id);
+        let _ = diesel::insert_into(movements::table)
+            .values(&NewMovement {
+                slot_id: Some(slot.id),
+                movement_type: 1,
+                operator_id: user_id,
+                operator_name: Some(operator_name),
+                sku: sku,
+                note: note,
+            })
+            .execute(&mut conn);
 
-            Ok(updated)
-        })
+        Ok(updated)
     })
     .await
     .map_err(|_| ErrorInternalServerError("Database error"))?;
-
-    let updated_slot = result.map_err(|_| ErrorInternalServerError("Database transaction error"))?;
-    hub.broadcast(WsEvent::slot_updated(&updated_slot));
-    Ok(HttpResponse::Ok().json(updated_slot))
+    
+    // Retorna resposta JSON simples
+    let updated = result.map_err(|e| {
+        match e {
+            diesel::result::Error::NotFound => ErrorNotFound(serde_json::json!({
+                "error": "Slot not found or already occupied",
+                "code": "SLOT_OCCUPIED"
+            })),
+            _ => ErrorInternalServerError(serde_json::json!({
+                "error": "Database error",
+                "code": "DATABASE_ERROR"
+            }))
+        }
+    })?;
+    
+    // Envia evento WebSocket
+    let ws_event = WsEvent::slot_entry(&updated);
+    hub.broadcast(ws_event);
+    
+    let response = SlotResponse::from(updated);
+    Ok(HttpResponse::Ok().json(response))
 }
 
 /// POST /api/slots/:address/exit
@@ -157,49 +184,54 @@ pub async fn exit(
     let addr = address.into_inner().to_uppercase();
     
     // TODO: Add authentication when middleware is implemented
-    let user_id = uuid::Uuid::new_v4(); // Placeholder
+    let user_id: Option<uuid::Uuid> = None; // Usar None em vez de UUID aleatório para evitar foreign key violation
     let operator_name = "System".to_string(); // Placeholder
     let note = body.note.clone();
 
     let result = web::block(move || {
-        conn.transaction::<_, diesel::result::Error, _>(|conn| {
-            let slot: Slot = slots::table
-                .filter(slots::address.eq(&addr))
-                .first::<Slot>(conn)?;
+        // 1. Busca slot
+        let slot = match slots::table
+            .filter(slots::address.eq(&addr))
+            .first::<Slot>(&mut conn) {
+                Ok(slot) => slot,
+                Err(_) => return Err(diesel::result::Error::NotFound),
+            };
 
-            if slot.status == "free" {
-                return Err(diesel::result::Error::RollbackTransaction);
-            }
+        // 2. Verifica se está occupied
+        if slot.status != "occupied" {
+            return Err(diesel::result::Error::NotFound);
+        }
 
-            let updated: Slot = diesel::update(slots::table.find(slot.id))
-                .set(&UpdateSlot {
-                    status:     "free".to_string(),
-                    sku:        None,
-                    updated_at: Utc::now().naive_utc(),
-                    updated_by: Some(user_id),
-                })
-                .get_result::<Slot>(conn)?;
+        // 3. Atualiza status para free
+        let updated: Slot = diesel::update(slots::table.find(slot.id))
+            .set(slots::status.eq("free"))
+            .get_result(&mut conn)?;
 
-            diesel::insert_into(movements::table)
-                .values(&NewMovement {
-                    slot_id: Some(slot.id),
-                    movement_type: 2, // 2=exit
-                    operator_id: Some(user_id),
-                    operator_name: Some(operator_name),
-                    sku: slot.sku,
-                    note: note,
-                })
-                .execute(conn)?;
+        // 4. Insere movement
+        diesel::insert_into(movements::table)
+            .values(&NewMovement {
+                slot_id: Some(slot.id),
+                movement_type: 2, // 2=exit
+                operator_id: user_id,
+                operator_name: Some(operator_name),
+                sku: slot.sku,
+                note: note,
+            })
+            .execute(&mut conn)?;
 
-            Ok(updated)
-        })
+        Ok(updated)
     })
     .await
     .map_err(|_| ErrorInternalServerError("Database error"))?;
 
-    let updated_slot = result.map_err(|_| ErrorInternalServerError("Database transaction error"))?;
-    hub.broadcast(WsEvent::slot_updated(&updated_slot));
-    Ok(HttpResponse::Ok().json(updated_slot))
+    let updated = result.map_err(|_| ErrorInternalServerError("Database transaction error"))?;
+    
+    // Envia evento WebSocket
+    let ws_event = WsEvent::slot_exit(&updated);
+    hub.broadcast(ws_event);
+    
+    let response = SlotResponse::from(updated);
+    Ok(HttpResponse::Ok().json(response))
 }
 
 /// GET /api/stats
@@ -234,8 +266,8 @@ pub fn compute_stats(
         std::collections::BTreeMap::new();
 
     for (street, status, cnt) in &rows {
-        let entry = street_map.entry(street.trim().to_string()).or_insert((0, 0));
-        if status == "occupied" { entry.0 += cnt; } else { entry.1 += cnt; }
+        let slot_entry = street_map.entry(street.trim().to_string()).or_insert((0, 0));
+        if status == "occupied" { slot_entry.0 += cnt; } else { slot_entry.1 += cnt; }
     }
 
     let streets: Vec<StreetStat> = street_map
@@ -255,29 +287,33 @@ pub fn compute_stats(
     Ok(WarehouseStats { total, occupied, free, pct, streets })
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SlotResponse {
-    pub id:         uuid::Uuid,
-    pub address:    String,
-    pub street:     String,
-    pub position:   i16,
-    pub lane:       String,
-    pub status:     String,
-    pub sku:        Option<String>,
+    pub id: uuid::Uuid,
+    pub address: String,
+    pub street: String,
+    pub position: i16,
+    pub lane: String,
+    pub status: String,
+    pub sku: Option<String>,
+    pub updated_by: Option<uuid::Uuid>,
+    pub created_at: String,
     pub updated_at: String,
 }
 
 impl From<Slot> for SlotResponse {
     fn from(s: Slot) -> Self {
         Self {
-            id:         s.id,
-            address:    s.address,
-            street:     s.street,
-            position:   s.position,
-            lane:       s.lane,
-            status:     s.status,
-            sku:        s.sku,
-            updated_at: s.updated_at.to_rfc3339(),
+            id: s.id,
+            address: s.address,
+            street: s.street,
+            position: s.position,
+            lane: s.lane,
+            status: s.status,
+            sku: s.sku,
+            updated_by: s.updated_by,
+            created_at: s.created_at.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
+            updated_at: s.updated_at.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
         }
     }
 }

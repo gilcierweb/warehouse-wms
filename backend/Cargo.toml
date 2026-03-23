@@ -20,3 +20,5 @@ tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 futures-util = "0.3.32"
 actix-ws = "0.4.0"
 actix-rt = "2.11.0"
+thiserror = "2.0.18"
+rust_xlsxwriter = "0.94.0"

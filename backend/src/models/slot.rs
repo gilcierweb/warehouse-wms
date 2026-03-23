@@ -44,7 +44,7 @@ pub struct UpdateSlot {
     pub status: String,
     pub sku: Option<String>,
     pub updated_at: chrono::NaiveDateTime,
-    pub updated_by: Option<Uuid>,
+    pub updated_by: Option<uuid::Uuid>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

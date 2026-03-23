@@ -82,7 +82,9 @@ const offset = ref(0)
 const filters = reactive({ slotId: '', type: '' as '' | 'entry' | 'exit', from: '', to: '' })
 
 function formatDate(iso: string) {
-  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(iso))
+  if (!iso) return '—'
+  const date = new Date(iso)
+  return isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'medium' }).format(date)
 }
 
 async function loadMovements() {
@@ -121,7 +123,7 @@ function mockMovements(): Movement[] {
     id: String(i),
     slotId: `${streets[i%6]}-${(i%20)+1}-${lanes[i%3]}`,
     type: i % 3 === 0 ? 'exit' : 'entry',
-    operator: ops[i % 3],
+    operator: ops[i % 3] || 'Desconhecido',
     sku: i % 4 === 0 ? `SKU-${1000+i}` : undefined,
     note: i % 7 === 0 ? 'Carga frágil' : undefined,
     createdAt: new Date(Date.now() - i * 3_600_000).toISOString(),
