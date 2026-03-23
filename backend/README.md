@@ -1,17 +1,17 @@
 # WMS Backend — Rust + Actix-Web + Diesel + PostgreSQL
 
-API REST + WebSocket em tempo real para o sistema de gestão de armazém.
+REST API + Real-time WebSocket for the warehouse management system.
 
 ---
 
 ## Stack
 
-| Camada        | Tecnologia                              |
+| Layer         | Technology                              |
 |---------------|-----------------------------------------|
 | Web framework | Actix-Web 4                             |
 | ORM           | Diesel 2 (PostgreSQL)                   |
 | Pool          | r2d2                                    |
-| Autenticação  | JWT (jsonwebtoken) + bcrypt             |
+| Authentication| JWT (jsonwebtoken) + bcrypt             |
 | WebSocket     | actix-ws + tokio broadcast channel      |
 | Export        | rust_xlsxwriter (Excel .xlsx)           |
 | Runtime       | Tokio async                             |
@@ -37,7 +37,7 @@ cargo add thiserror
 cargo add rust_xlsxwriter
 
 cargo install diesel_cli --no-default-features --features postgres
-export DATABASE_URL=postgres://postgres:gil123@localhost:5432/warehouse_wms_development
+export DATABASE_URL=postgres://username:password@localhost:5432/warehouse_wms_development
 diesel setup
 
 diesel migration generate create_users
@@ -50,111 +50,127 @@ diesel migration run
 diesel migration redo
 ```
 
-## Estrutura do Projeto
+## Project Structure
 
 ```shell
 wms-backend/
 ├── src/
 │   ├── main.rs                  # Bootstrap: HTTP server, CORS, pool, hub
-│   ├── config.rs                # Leitura de variáveis de ambiente
-│   ├── db.rs                    # Pool r2d2 Diesel/PostgreSQL
-│   ├── routes.rs                # Todas as rotas em um lugar
-│   ├── schema.rs                # Gerado pelo Diesel CLI
-│   ├── errors/
-│   │   └── mod.rs               # AppError com ResponseError do Actix
-│   ├── models/
-│   │   └── mod.rs               # Structs Slot, Movement, User, AlertConfig
-│   ├── middleware/
+│   ├── auth/                    # Authentication logic
+│   │   └── mod.rs
+│   ├── config/                  # Environment configuration
+│   │   └── mod.rs
+│   ├── controllers/             # Route handlers
 │   │   ├── mod.rs
-│   │   └── auth.rs              # Extrator AuthUser (JWT FromRequest)
-│   ├── handlers/
+│   │   ├── auth_controller.rs   # login, register, me
+│   │   ├── export_controller.rs # download Excel
+│   │   ├── movement_controller.rs # history, undo
+│   │   └── slot_controller.rs   # entry, exit, list, stats
+│   ├── db/                      # Database pool and connection
 │   │   ├── mod.rs
-│   │   ├── slots.rs             # entry, exit, list, stats
-│   │   ├── movements.rs         # histórico, desfazer
-│   │   ├── auth.rs              # login, register, me
-│   │   └── export.rs            # download Excel
-│   └── ws/
-│       └── mod.rs               # WsHub (broadcast) + ws_handler
+│   │   └── conn.rs
+│   ├── errors/                  # Error handling
+│   │   └── mod.rs               # AppError with Actix ResponseError
+│   ├── middleware/              # JWT auth middleware
+│   │   ├── mod.rs
+│   │   └── auth.rs              # AuthUser extractor (JWT FromRequest)
+│   ├── models/                  # Data models
+│   │   ├── mod.rs               # Slot, Movement, User, AlertConfig structs
+│   │   ├── alert_config.rs
+│   │   ├── movement.rs
+│   │   ├── profile.rs
+│   │   ├── slot.rs
+│   │   └── user.rs
+│   ├── repositories/            # Database access layer
+│   │   ├── mod.rs
+│   │   ├── alert_config_repository.rs
+│   │   ├── movement_repository.rs
+│   │   ├── slot_repository.rs
+│   │   └── user_repository.rs
+│   ├── routes/                  # Route definitions
+│   │   ├── mod.rs
+│   │   └── api.rs
+│   └── ws/                      # WebSocket handlers
+│       ├── mod.rs               # WsHub (broadcast) + ws_handler
+│       └── handler.rs
 ├── migrations/
 │   └── 00000000000000_initial/
-│       ├── up.sql               # Cria todas as tabelas + seed de slots
-│       └── down.sql             # Remove tudo
+│       ├── up.sql               # Creates all tables + slot seed
+│       └── down.sql             # Drops everything
 ├── Cargo.toml
 ├── diesel.toml
-├── Dockerfile
-├── docker-compose.yml
 └── .env.example
 ```
 
 ---
 
-## Setup rápido (desenvolvimento local)
+## Quick Setup (local development)
 
-### 1. Pré-requisitos
+### 1. Prerequisites
 
 ```bash
 # Rust toolchain
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Diesel CLI com suporte PostgreSQL
+# Diesel CLI with PostgreSQL support
 cargo install diesel_cli --no-default-features --features postgres
 
-# PostgreSQL rodando (Docker é o mais fácil)
+# PostgreSQL running (Docker is easiest)
 docker run -d \
   --name wms-postgres \
   -e POSTGRES_USER=wms_user \
   -e POSTGRES_PASSWORD=wms_pass \
   -e POSTGRES_DB=wms_db \
   -p 5432:5432 \
-  postgres:16-alpine
+  postgres:18-alpine
 ```
 
-### 2. Configurar ambiente
+### 2. Configure environment
 
 ```bash
 cp .env.example .env
-# Edite .env se necessário — os valores padrão já apontam para o Docker acima
+# Edit .env if needed — default values already point to the Docker above
 ```
 
-### 3. Aplicar migrations + seed
+### 3. Apply migrations + seed
 
 ```bash
-# Cria o banco e aplica migrations (tabelas + 360 slots A-F / N1-N3 / 1-20)
+# Create database and apply migrations (tables + 360 slots A-F / N1-N3 / 1-20)
 diesel migration run
 
-# (Opcional) Regenerar schema.rs após mudanças no banco
+# (Optional) Regenerate schema.rs after database changes
 diesel print-schema > src/schema.rs
 ```
 
-### 4. Criar usuário admin inicial
+### 4. Create initial admin user
 
 ```bash
 curl -s -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","email":"admin@wms.local","password":"Senha@123","role":"admin"}' \
+  -d '{"username":"admin","email":"admin@wms.local","password":"Password@123","role":"admin"}' \
   | jq
 ```
 
-### 5. Rodar o servidor
+### 5. Run the server
 
 ```bash
 cargo run
 
-# Ou em modo release (muito mais rápido)
+# Or in release mode (much faster)
 cargo run --release
 ```
 
-O servidor sobe em `http://0.0.0.0:8080`.
+Server runs at `http://0.0.0.0:8080`.
 
 ---
 
-## Docker Compose (tudo junto)
+## Docker Compose (everything together)
 
 ```bash
-# Sobe PostgreSQL + Backend + Frontend em um comando
+# Start PostgreSQL + Backend + Frontend in one command
 docker compose up --build
 
-# Rebuild só do backend
+# Rebuild only backend
 docker compose up --build backend
 ```
 
@@ -162,9 +178,9 @@ docker compose up --build backend
 
 ## API Reference
 
-### Autenticação
+### Authentication
 
-Todas as rotas (exceto `/api/auth/login`, `/api/auth/register` e `/health`) exigem header:
+All routes (except `/api/auth/login`, `/api/auth/register` and `/health`) require header:
 
 ```
 Authorization: Bearer <token>
@@ -174,18 +190,18 @@ Authorization: Bearer <token>
 
 ### Auth
 
-| Método | Rota                  | Body                                      | Descrição         |
+| Method | Route                 | Body                                      | Description       |
 |--------|-----------------------|-------------------------------------------|-------------------|
-| POST   | `/api/auth/register`  | `{username, email, password, role?}`      | Cadastrar usuário |
-| POST   | `/api/auth/login`     | `{username, password}`                    | Login → token JWT |
-| GET    | `/api/auth/me`        | —                                         | Dados do usuário  |
+| POST   | `/api/auth/register`  | `{username, email, password, role?}`      | Register user     |
+| POST   | `/api/auth/login`     | `{username, password}`                    | Login → JWT token |
+| GET    | `/api/auth/me`        | —                                         | User data         |
 
 **Login response:**
 ```json
 {
   "token":    "eyJ...",
   "user_id":  "uuid",
-  "username": "joao",
+  "username": "john",
   "role":     "operator"
 }
 ```
@@ -194,19 +210,19 @@ Authorization: Bearer <token>
 
 ### Slots
 
-| Método | Rota                      | Query / Body             | Descrição                  |
-|--------|---------------------------|--------------------------|----------------------------|
-| GET    | `/api/slots`              | `?street=A&status=free`  | Lista todos os slots       |
-| GET    | `/api/slots/:id`          | —                        | Detalhe de um slot         |
-| POST   | `/api/slots/:id/entry`    | `{sku?, note?}`          | Registrar entrada (→ occupied) |
-| POST   | `/api/slots/:id/exit`     | `{note?}`                | Registrar saída (→ free)   |
+| Method | Route                     | Query / Body             | Description                     |
+|--------|---------------------------|--------------------------|---------------------------------|
+| GET    | `/api/slots`              | `?street=A&status=free`  | List all slots                  |
+| GET    | `/api/slots/:id`          | —                        | Slot details                    |
+| POST   | `/api/slots/:id/entry`    | `{sku?, note?}`          | Register entry (→ occupied)     |
+| POST   | `/api/slots/:id/exit`     | `{note?}`                | Register exit (→ free)          |
 
-**Exemplo — entrada:**
+**Example — entry:**
 ```bash
 curl -X POST http://localhost:8080/api/slots/A-5-N2/entry \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"sku":"PROD-001","note":"Carga de segunda-feira"}'
+  -d '{"sku":"PROD-001","note":"Monday shipment"}'
 ```
 
 **Slot response:**
@@ -226,9 +242,9 @@ curl -X POST http://localhost:8080/api/slots/A-5-N2/entry \
 
 ### Stats
 
-| Método | Rota          | Descrição                      |
-|--------|---------------|--------------------------------|
-| GET    | `/api/stats`  | Ocupação geral + por rua       |
+| Method | Route         | Description                      |
+|--------|---------------|----------------------------------|
+| GET    | `/api/stats`  | Overall occupancy + by street    |
 
 ```json
 {
@@ -244,14 +260,14 @@ curl -X POST http://localhost:8080/api/slots/A-5-N2/entry \
 
 ---
 
-### Movimentos
+### Movements
 
-| Método | Rota                    | Descrição                          |
-|--------|-------------------------|------------------------------------|
-| GET    | `/api/movements`        | Histórico com filtros              |
-| POST   | `/api/movements/undo`   | Desfazer último movimento do slot  |
+| Method | Route                   | Description                          |
+|--------|-------------------------|--------------------------------------|
+| GET    | `/api/movements`        | History with filters                 |
+| POST   | `/api/movements/undo`   | Undo last movement for slot          |
 
-**Filtros disponíveis:**
+**Available filters:**
 ```
 ?slot_id=A-5-N2&type=entry&from=2026-01-01T00:00:00Z&limit=50&offset=0
 ```
@@ -265,9 +281,9 @@ curl -X POST http://localhost:8080/api/slots/A-5-N2/entry \
 
 ### Export
 
-| Método | Rota                   | Descrição                                  |
+| Method | Route                   | Description                                  |
 |--------|------------------------|--------------------------------------------|
-| GET    | `/api/export/excel`    | Download `.xlsx` com 3 abas (mapa, histórico, resumo) |
+| GET    | `/api/export/excel`    | Download `.xlsx` with 3 tabs (map, history, summary) |
 
 ---
 
@@ -277,17 +293,17 @@ curl -X POST http://localhost:8080/api/slots/A-5-N2/entry \
 ws://localhost:8080/ws/live
 ```
 
-Mensagens recebidas pelo cliente (JSON):
+Client messages (JSON):
 
 ```json
-// Slot atualizado
+// Slot updated
 { "event": "slot_updated",  "payload": { "id": "A-5-N2", "status": "occupied", ... } }
 
-// Stats globais atualizadas
+// Global stats updated
 { "event": "stats_updated", "payload": { "total": 360, "occupied": 120, "pct": 33.3, ... } }
 
-// Alerta de capacidade
-{ "event": "alert",         "payload": { "message": "Armazém atingiu 80.0%!", "pct": 80.0 } }
+// Capacity alert
+{ "event": "alert",         "payload": { "message": "Warehouse reached 80.0%!", "pct": 80.0 } }
 ```
 
 ---
@@ -301,25 +317,25 @@ curl http://localhost:8080/health
 
 ---
 
-## Papéis de usuário (roles)
+## User Roles
 
-| Role       | Permissões                                   |
-|------------|----------------------------------------------|
-| `admin`    | Tudo — incluindo gerenciar usuários          |
-| `operator` | Entrada, saída, desfazer, consultas          |
-| `viewer`   | Somente leitura (GET)                        |
+| Role       | Permissions                                   |
+|------------|-----------------------------------------------|
+| `admin`    | Everything — including managing users         |
+| `operator` | Entry, exit, undo, queries                    |
+| `viewer`   | Read-only (GET)                               |
 
 ---
 
-## Variáveis de ambiente
+## Environment Variables
 
-| Variável           | Padrão              | Descrição                          |
-|--------------------|---------------------|------------------------------------|
-| `DATABASE_URL`     | —                   | String de conexão PostgreSQL       |
-| `HOST`             | `0.0.0.0`           | Interface de bind do servidor      |
-| `PORT`             | `8080`              | Porta TCP                          |
-| `JWT_SECRET`       | —                   | Chave secreta para tokens JWT      |
-| `JWT_EXPIRY_HOURS` | `8`                 | Validade do token em horas         |
-| `ALERT_THRESHOLD`  | `80`                | % de ocupação que dispara alerta   |
-| `RUST_LOG`         | `info`              | Nível de log                       |
-| `CORS_ORIGINS`     | `http://localhost:3000` | Origins permitidas (vírgula)   |
+| Variable           | Default             | Description                          |
+|--------------------|---------------------|--------------------------------------|
+| `DATABASE_URL`     | —                   | PostgreSQL connection string         |
+| `HOST`             | `0.0.0.0`           | Server bind interface                |
+| `PORT`             | `8080`              | TCP port                             |
+| `JWT_SECRET`       | —                   | Secret key for JWT tokens            |
+| `JWT_EXPIRY_HOURS` | `8`                 | Token validity in hours              |
+| `ALERT_THRESHOLD`  | `80`                | Occupancy % that triggers alert      |
+| `RUST_LOG`         | `info`              | Log level                            |
+| `CORS_ORIGINS`     | `http://localhost:3000` | Allowed origins (comma separated)  |

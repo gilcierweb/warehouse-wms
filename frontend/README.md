@@ -1,91 +1,94 @@
 # WMS — Frontend (Nuxt.js)
 
-Interface de controle de endereçamento do armazém em tempo real.
+Real-time warehouse addressing control interface.
 
 ## Stack
 
 - **Nuxt 4** + **Vue 3** (Composition API + `<script setup>`)
-- **TypeScript** — tipagem completa
-- **WebSocket** — atualizações em tempo real via Actix-Web
-- **IBM Plex Mono** — tipografia industrial
+- **TypeScript** — full type safety
+- **WebSocket** — real-time updates via Actix-Web
+- **IBM Plex Mono** — industrial typography
 
-## Estrutura
+## Structure
 
 ```
 frontend/
-├── assets/css/main.css          # Design system global (dark theme, variáveis CSS)
-├── components/
-│   ├── SlotGrid.vue             # Renderiza uma rua com 3 corredores de posições
-│   └── ActionPanel.vue          # Painel entrada/saída/desfazer + info do slot
-├── composables/
-│   ├── useWarehouseStore.ts     # Estado global dos slots (useState Nuxt)
-│   ├── useWarehouseApi.ts       # Todas as chamadas REST ao backend Rust
-│   ├── useWarehouseWS.ts        # Conexão WebSocket com reconexão automática
-│   └── useAlerts.ts             # Sistema de toasts
-├── layouts/
-│   └── default.vue              # Shell: sidebar + status WS + toasts
-├── pages/
-│   ├── index.vue                # Mapa de ocupação principal
-│   ├── history.vue              # Histórico com filtros e paginação
-│   ├── dashboard.vue            # KPIs e gráfico por rua
-│   └── settings.vue             # Configuração de alertas e conexão API
-├── types/index.ts               # Interfaces TypeScript (Slot, Movement, etc.)
-└── nuxt.config.ts               # Configuração Nuxt
+├── app/
+│   ├── assets/css/main.css          # Global design system (dark theme, CSS variables)
+│   ├── components/
+│   │   ├── SlotGrid.vue             # Renders a street with 3 position lanes
+│   │   └── ActionPanel.vue          # Entry/exit/undo panel + slot info
+│   ├── composables/
+│   │   ├── useWarehouseStore.ts     # Global slots state (Nuxt useState)
+│   │   ├── useWarehouseApi.ts       # All REST calls to Rust backend
+│   │   ├── useWarehouseWS.ts        # WebSocket connection with auto-reconnect
+│   │   └── useAlerts.ts             # Toast system
+│   ├── layouts/
+│   │   └── default.vue              # Shell: sidebar + WS status + toasts
+│   ├── pages/
+│   │   ├── index.vue                # Main occupancy map
+│   │   ├── history.vue              # History with filters and pagination
+│   │   ├── dashboard.vue            # KPIs and street chart
+│   │   └── settings.vue             # Alert and API connection settings
+│   └── types/index.ts               # TypeScript interfaces (Slot, Movement, etc.)
+├── public/                          # Static assets
+├── nuxt.config.ts                   # Nuxt configuration
+└── package.json
 ```
 
 ## Setup
 
 ```bash
-# Instalar dependências
+# Install dependencies
 npm install
 
-# Rodar em desenvolvimento (aponta para http://localhost:8080 por padrão)
+# Run in development (points to http://localhost:8080 by default)
 npm run dev
 
-# Build de produção
+# Production build
 npm run build
 ```
 
-## Variáveis de ambiente
+## Environment Variables
 
-Crie `.env` na raiz do frontend:
+Create `.env` in the frontend root:
 
 ```env
 API_BASE=http://localhost:8080
 WS_BASE=ws://localhost:8080
 ```
 
-## Integração com backend (Actix-Web)
+## Backend Integration (Actix-Web)
 
-O frontend espera os seguintes endpoints do backend Rust:
+The frontend expects the following endpoints from the Rust backend:
 
-| Método | Rota                           | Descrição                  |
+| Method | Route                           | Description                  |
 |--------|-------------------------------|----------------------------|
-| GET    | /api/slots                    | Lista todos os slots       |
-| POST   | /api/slots/:id/entry          | Registrar entrada          |
-| POST   | /api/slots/:id/exit           | Registrar saída            |
-| POST   | /api/movements/undo           | Desfazer último movimento  |
-| GET    | /api/movements                | Histórico (com filtros)    |
-| GET    | /api/stats                    | Estatísticas gerais        |
+| GET    | /api/slots                    | List all slots             |
+| POST   | /api/slots/:id/entry          | Register entry             |
+| POST   | /api/slots/:id/exit           | Register exit              |
+| POST   | /api/movements/undo           | Undo last movement         |
+| GET    | /api/movements                | History (with filters)     |
+| GET    | /api/stats                    | General statistics         |
 | GET    | /api/export/excel             | Download Excel             |
 | GET    | /api/export/pdf               | Download PDF               |
-| WS     | /ws/live                      | Canal WebSocket tempo real |
+| WS     | /ws/live                      | Real-time WebSocket channel|
 
-### Formato WebSocket (JSON)
+### WebSocket Format (JSON)
 
 ```json
 { "event": "slot_updated",  "payload": { "id": "A-5-N2", "status": "occupied", ... } }
 { "event": "stats_updated", "payload": { "total": 360, "occupied": 120, "pct": 33.3, ... } }
-{ "event": "alert",         "payload": { "message": "Capacidade 80%", "pct": 80.0 } }
+{ "event": "alert",         "payload": { "message": "Capacity 80%", "pct": 80.0 } }
 ```
 
-## Formato de endereço
+## Address Format
 
-`{RUA}-{POSIÇÃO}-{CORREDOR}` → ex: `D-10-N3`
+`{STREET}-{POSITION}-{LANE}` → e.g.: `D-10-N3`
 
-- Rua: A–F (configurável em Settings)
-- Posição: 1–20 (configurável)
-- Corredor: N1, N2, N3
+- Street: A–F (configurable in Settings)
+- Position: 1–20 (configurable)
+- Lane: N1, N2, N3
 
 # Nuxt Minimal Starter
 
