@@ -1,4 +1,4 @@
-# WMS — Frontend (Nuxt.js)
+# WMS - Frontend (Nuxt.js)
 
 Real-time warehouse addressing control interface.
 

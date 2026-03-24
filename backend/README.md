@@ -1,4 +1,4 @@
-# WMS Backend — Rust + Actix-Web + Diesel + PostgreSQL
+# WMS Backend - Rust + Actix-Web + Diesel + PostgreSQL
 
 REST API + Real-time WebSocket for the warehouse management system.
 
