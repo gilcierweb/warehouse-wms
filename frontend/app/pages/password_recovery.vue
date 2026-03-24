@@ -80,7 +80,7 @@
         </form>
 
         <!-- Success Message -->
-        <div v-else class="auth-success">
+        <div v-else-if="emailSent" class="auth-success">
           <div class="auth-success-icon">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -88,6 +88,13 @@
           </div>
           <h4 class="auth-success-title">Check your email</h4>
           <p class="auth-success-desc">We've sent a password reset link to <strong>{{ email }}</strong></p>
+          <div class="auth-token-box">
+            <p class="auth-token-label">Reset Token (for testing):</p>
+            <code class="auth-token">{{ recoveryToken }}</code>
+          </div>
+          <NuxtLink :to="`/password_reset?token=${recoveryToken}`" class="auth-submit-btn auth-submit-btn-link">
+            Continue to Reset
+          </NuxtLink>
         </div>
 
         <!-- Login Link -->
@@ -117,22 +124,24 @@ definePageMeta({
   layout: 'auth'
 })
 
+const { recoverPassword } = useAuth()
 const { push } = useAlerts()
 
 const email = ref('')
 const isLoading = ref(false)
 const error = ref('')
 const emailSent = ref(false)
+const recoveryToken = ref('')
 
 const handleSubmit = async () => {
   error.value = ''
   isLoading.value = true
   
   try {
-    // Simulate API call - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
+    const response = await recoverPassword(email.value)
     emailSent.value = true
+    // Token returned from backend API (in production this would come from email)
+    recoveryToken.value = response.token || ''
     push({ type: 'success', message: 'Reset link sent to your email!' })
   } catch (err: any) {
     error.value = err?.message || 'Failed to send reset link'
@@ -391,5 +400,68 @@ const handleSubmit = async () => {
 
 .auth-link:hover {
   color: var(--text);
+}
+
+.auth-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 48px;
+  background: var(--green);
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+.auth-submit-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-submit-btn-link {
+  text-decoration: none;
+  margin-top: 16px;
+}
+
+.auth-token-box {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 100%;
+}
+
+.auth-token-label {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+
+.auth-token {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--green);
+  word-break: break-all;
+}
+
+.auth-submit-btn-link {
+  text-decoration: none;
+  margin-top: 16px;
 }
 </style>

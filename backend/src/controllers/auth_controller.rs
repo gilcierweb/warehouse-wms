@@ -29,6 +29,17 @@ pub struct RegisterRequest {
     pub role:     Option<i32>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RecoverRequest {
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResetPasswordRequest {
+    pub token: String,
+    pub password: String,
+}
+
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
     pub token:    String,
@@ -176,5 +187,103 @@ pub async fn me(user: AuthUser) -> AppResult<HttpResponse> {
         "id":       user.claims().sub,
         "username": user.claims().username,
         "role":     user.claims().role,
+    })))
+}
+
+// POST /api/auth/recover
+#[post("/recover")]
+pub async fn recover_password(
+    db: web::Data<Database>,
+    body: web::Json<RecoverRequest>,
+) -> AppResult<HttpResponse> {
+    let email = body.email.clone();
+    let db_clone = db.clone();
+
+    let _user: Option<User> = web::block(move || {
+        let mut conn = db_clone.pool.get().unwrap();
+        users::table
+            .filter(users::email.eq(&email))
+            .select(User::as_select())
+            .first(&mut conn)
+            .optional()
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.to_string()))?
+    .map_err(AppError::Database)?;
+
+    let token = Uuid::new_v4().to_string();
+    let now = Utc::now().naive_utc();
+    let mut response_token = String::new();
+
+    if let Some(user) = _user {
+        let token_clone = token.clone();
+        let db_clone2 = db.clone();
+        web::block(move || {
+            let mut conn = db_clone2.pool.get().unwrap();
+            diesel::update(users::table.filter(users::id.eq(user.id)))
+                .set((
+                    users::reset_password_token.eq(&token_clone),
+                    users::reset_password_sent_at.eq(&now),
+                ))
+                .execute(&mut conn)
+        })
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::Database)?;
+
+        println!("DEBUG: Password recovery token generated for user: {}", user.username);
+        response_token = token;
+    }
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "If the email exists, a recovery link has been sent",
+        "token": response_token
+    })))
+}
+
+// POST /api/auth/reset
+#[post("/reset")]
+pub async fn reset_password(
+    db: web::Data<Database>,
+    body: web::Json<ResetPasswordRequest>,
+) -> AppResult<HttpResponse> {
+    let token = body.token.clone();
+    let new_password = body.password.clone();
+    let db_clone = db.clone();
+
+    let user: User = web::block(move || {
+        let mut conn = db_clone.pool.get().unwrap();
+        users::table
+            .filter(users::reset_password_token.eq(&token))
+            .select(User::as_select())
+            .first(&mut conn)
+            .optional()
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.to_string()))?
+    .map_err(AppError::Database)?
+    .ok_or(AppError::BadRequest("Invalid or expired token".to_string()))?;
+
+    let encrypted_password = password_hash(new_password);
+    let now = Utc::now().naive_utc();
+
+    web::block(move || {
+        let mut conn = db.pool.get().unwrap();
+        diesel::update(users::table.filter(users::id.eq(user.id)))
+            .set((
+                users::encrypted_password.eq(encrypted_password),
+                users::reset_password_token.eq::<Option<String>>(None),
+                users::updated_at.eq(now),
+            ))
+            .execute(&mut conn)
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.to_string()))?
+    .map_err(AppError::Database)?;
+
+    println!("DEBUG: Password reset successful for user: {}", user.username);
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "Password updated successfully"
     })))
 }

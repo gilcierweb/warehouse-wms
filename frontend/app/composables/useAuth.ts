@@ -67,6 +67,26 @@ export const useAuth = () => {
     })
   }
   
+  // Password recovery - send reset email
+  const recoverPassword = async (email: string): Promise<{ message: string; token: string }> => {
+    const response = await $fetch<{ message: string; token: string }>(`${config.public.apiBase}/api/auth/recover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { email }
+    })
+    return response
+  }
+  
+  // Reset password with token
+  const resetPassword = async (token: string, password: string): Promise<{ message: string }> => {
+    const response = await $fetch<{ message: string }>(`${config.public.apiBase}/api/auth/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { token, password }
+    })
+    return response
+  }
+  
   // Logout function
   const logout = () => {
     setToken(null)
@@ -114,6 +134,8 @@ export const useAuth = () => {
     isOperator,
     login,
     register,
+    recoverPassword,
+    resetPassword,
     logout,
     fetchCurrentUser,
     initAuth

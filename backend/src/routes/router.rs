@@ -1,6 +1,8 @@
-pub use crate::controllers::{auth_controller, movements_controller, slots_controller, export_controller};
-use actix_web::web;
+pub use crate::controllers::{
+    auth_controller, export_controller, movements_controller, slots_controller,
+};
 use crate::ws::server::ws_handler;
+use actix_web::web;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -10,6 +12,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
                     .service(auth_controller::login)
                     .service(auth_controller::register)
                     .service(auth_controller::me)
+                    .service(auth_controller::recover_password)
+                    .service(auth_controller::reset_password),
             )
             .service(movements_controller::list_movements)
             .service(movements_controller::undo_movement)
