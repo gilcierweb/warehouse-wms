@@ -1,13 +1,26 @@
 export type SlotStatus = 'free' | 'occupied'
 
 export interface Slot {
-  id: string         // e.g. "A-5-N2"
+  id: string         // UUID
+  address: string    // e.g. "A-5-N2"
   street: string     // "A"
   position: number   // 5
   lane: string       // "N2"
   status: SlotStatus
-  updatedAt: string
-  updatedBy?: string
+  sku?: string
+  updated_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateSlotRequest {
+  street: string    // A-Z
+  position: number  // 1-30
+  lane: string      // N1 | N2 | N3
+}
+
+export interface UpdateSlotRequest {
+  status?: 'free' | 'occupied'
   sku?: string
 }
 

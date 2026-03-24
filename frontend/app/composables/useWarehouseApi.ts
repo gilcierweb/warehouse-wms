@@ -1,4 +1,4 @@
-import type { Slot, Movement, WarehouseStats } from '~/types'
+import type { Slot, Movement, WarehouseStats, CreateSlotRequest, UpdateSlotRequest } from '~/types'
 
 export const useWarehouseApi = () => {
   const config = useRuntimeConfig()
@@ -33,6 +33,39 @@ export const useWarehouseApi = () => {
   // ── Slots ──────────────────────────────────────────────
   async function fetchSlots(): Promise<Slot[]> {
     const response = await fetch(`${base}/api/slots`, {
+      headers: getHeaders(false)
+    })
+    return handleResponse(response)
+  }
+
+  async function getSlotById(id: string): Promise<Slot> {
+    const response = await fetch(`${base}/api/slots/${id}`, {
+      headers: getHeaders(false)
+    })
+    return handleResponse(response)
+  }
+
+  async function createSlot(slot: CreateSlotRequest): Promise<Slot> {
+    const response = await fetch(`${base}/api/slots`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(slot)
+    })
+    return handleResponse(response)
+  }
+
+  async function updateSlot(id: string, slot: UpdateSlotRequest): Promise<Slot> {
+    const response = await fetch(`${base}/api/slots/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(slot)
+    })
+    return handleResponse(response)
+  }
+
+  async function deleteSlot(id: string): Promise<void> {
+    const response = await fetch(`${base}/api/slots/${id}`, {
+      method: 'DELETE',
       headers: getHeaders(false)
     })
     return handleResponse(response)
@@ -117,6 +150,10 @@ export const useWarehouseApi = () => {
 
   return {
     fetchSlots,
+    getSlotById,
+    createSlot,
+    updateSlot,
+    deleteSlot,
     entry,
     exit,
     fetchStats,

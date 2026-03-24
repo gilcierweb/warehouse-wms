@@ -27,6 +27,10 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(slots_controller::exit)
             .service(slots_controller::get_stats)
             .service(slots_controller::get_slot)
+            .service(slots_controller::get_slot_by_id)
+            .service(slots_controller::create_slot)
+            .service(slots_controller::update_slot_by_id)
+            .service(slots_controller::delete_slot_by_id)
             .service(export_controller::export_excel),
     )
     .route("/ws/live", web::get().to(ws_handler));

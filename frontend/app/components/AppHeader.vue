@@ -44,6 +44,7 @@ const navItems = computed(() => [
   { path: '/', label: t('menu.map'), icon: '◪' },
   { path: '/dashboard', label: t('menu.dashboard'), icon: '▤' },
   { path: '/history', label: t('menu.history'), icon: '◖' },
+  { path: '/slots-crud', label: t('menu.slotsCrud'), icon: '📦' },
   { path: '/settings', label: t('menu.settings'), icon: '⚙' }
 ])
 

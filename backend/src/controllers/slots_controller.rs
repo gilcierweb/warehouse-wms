@@ -1,12 +1,14 @@
-use actix_web::{get, post, web, HttpResponse, Error, error::{ErrorInternalServerError, ErrorNotFound}};
+use actix_web::{get, post, put, delete, web, HttpResponse, Error, error::{ErrorInternalServerError, ErrorNotFound}};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use rust_i18n::t;
+use uuid::Uuid;
 
 use crate::db::database::Database;
 use crate::db::schema::{movements, slots};
-use crate::models::{movement::NewMovement, slot::Slot, slot::StreetStat, slot::WarehouseStats};
+use crate::models::{movement::NewMovement, slot::{Slot, CreateSlotRequest, UpdateSlotRequest, NewSlot}, slot::StreetStat, slot::WarehouseStats};
 use crate::ws::server::{HubData, WsEvent};
+use crate::repositories::container::AppContainer;
 
 // ── Request / Response DTOs ───────────────────────────────────
 
@@ -313,5 +315,97 @@ impl From<Slot> for SlotResponse {
             created_at: s.created_at.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
             updated_at: s.updated_at.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
         }
+    }
+}
+
+// ── CRUD Operations ─────────────────────────────────────────────
+
+/// GET /api/slots/:id
+#[get("/slots/{id}")]
+pub async fn get_slot_by_id(
+    container: web::Data<AppContainer>,
+    id: web::Path<Uuid>,
+) -> Result<HttpResponse, Error> {
+    match container.slots.find(&id).await {
+        Ok(slot) => Ok(HttpResponse::Ok().json(slot)),
+        Err(_) => Ok(HttpResponse::NotFound().body(t!("slots.get.not_found").to_string())),
+    }
+}
+
+/// POST /api/slots
+#[post("/slots")]
+pub async fn create_slot(
+    container: web::Data<AppContainer>,
+    slot_request: web::Json<CreateSlotRequest>,
+) -> Result<HttpResponse, Error> {
+    // Validate request
+    if let Err(e) = slot_request.validate() {
+        return Ok(HttpResponse::BadRequest().json(serde_json::json!({
+            "error": e,
+            "code": "VALIDATION_ERROR"
+        })));
+    }
+    
+    let new_slot: NewSlot = slot_request.into_inner().into();
+    
+    match container.slots.create(&new_slot).await {
+        Ok(slot) => Ok(HttpResponse::Created().json(slot)),
+        Err(e) => Ok(HttpResponse::BadRequest().json(serde_json::json!({
+            "error": e.to_string(),
+            "code": "DATABASE_ERROR"
+        }))),
+    }
+}
+
+/// PUT /api/slots/:id
+#[put("/slots/{id}")]
+pub async fn update_slot_by_id(
+    container: web::Data<AppContainer>,
+    id: web::Path<Uuid>,
+    update_request: web::Json<UpdateSlotRequest>,
+) -> Result<HttpResponse, Error> {
+    // Validate request
+    if let Err(e) = update_request.validate() {
+        return Ok(HttpResponse::BadRequest().json(serde_json::json!({
+            "error": e,
+            "code": "VALIDATION_ERROR"
+        })));
+    }
+    
+    // First get the existing slot
+    let existing_slot = match container.slots.find(&id).await {
+        Ok(slot) => slot,
+        Err(_) => return Ok(HttpResponse::NotFound().body(t!("slots.get.not_found").to_string())),
+    };
+    
+    // Create NewSlot with updated values (since update expects NewSlot)
+    let updated_slot = NewSlot {
+        address: existing_slot.address,
+        street: existing_slot.street,
+        position: existing_slot.position,
+        lane: existing_slot.lane,
+        status: update_request.status.clone().unwrap_or(existing_slot.status),
+        sku: update_request.sku.clone().or(existing_slot.sku),
+        updated_by: None, // TODO: Get from auth middleware
+    };
+    
+    match container.slots.update(&id, &updated_slot).await {
+        Ok(slot) => Ok(HttpResponse::Ok().json(slot)),
+        Err(e) => Ok(HttpResponse::BadRequest().json(serde_json::json!({
+            "error": e.to_string(),
+            "code": "DATABASE_ERROR"
+        }))),
+    }
+}
+
+/// DELETE /api/slots/:id
+#[delete("/slots/{id}")]
+pub async fn delete_slot_by_id(
+    container: web::Data<AppContainer>,
+    id: web::Path<Uuid>,
+) -> Result<HttpResponse, Error> {
+    match container.slots.destroy(&id).await {
+        Ok(_) => Ok(HttpResponse::Ok().finish()),
+        Err(_) => Ok(HttpResponse::NotFound().body(t!("slots.get.not_found").to_string())),
     }
 }
