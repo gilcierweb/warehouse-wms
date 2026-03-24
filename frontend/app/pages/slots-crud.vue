@@ -49,59 +49,61 @@
       <!-- Table area -->
       <div class="map-area">
         <div class="table-card">
-          <table class="detail-table">
-            <thead>
-              <tr>
-                <th>{{ $t('slotsCrud.address') }}</th>
-                <th>{{ $t('slotsCrud.street') }}</th>
-                <th>{{ $t('slotsCrud.position') }}</th>
-                <th>{{ $t('slotsCrud.lane') }}</th>
-                <th>{{ $t('slotsCrud.status') }}</th>
-                <th>{{ $t('slotsCrud.sku') }}</th>
-                <th>{{ $t('slotsCrud.updatedAt') }}</th>
-                <th class="actions-column">{{ $t('slotsCrud.actions') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="slot in filteredSlots" :key="slot.id">
-                <td>
-                  <code class="address-code">{{ slot.address }}</code>
-                </td>
-                <td>{{ slot.street }}</td>
-                <td>{{ slot.position }}</td>
-                <td>{{ slot.lane }}</td>
-                <td>
-                  <span 
-                    class="tag" 
-                    :class="slot.status === 'occupied' ? 'tag-red' : 'tag-green'"
-                  >
-                    {{ $t(`slotsCrud.${slot.status}`) }}
-                  </span>
-                </td>
-                <td>
-                  <span v-if="slot.sku" class="sku-badge">{{ slot.sku }}</span>
-                  <span v-else class="text-muted">—</span>
-                </td>
-                <td class="date-cell">{{ formatDate(slot.updated_at) }}</td>
-                <td class="actions-cell">
-                  <button 
-                    class="icon-btn" 
-                    @click="editSlot(slot)"
-                    :title="$t('slotsCrud.edit')"
-                  >
-                    ✏️
-                  </button>
-                  <button 
-                    class="icon-btn icon-btn--red" 
-                    @click="confirmDelete(slot)"
-                    :title="$t('slotsCrud.delete')"
-                  >
-                    🗑️
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrapper">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th>{{ $t('slotsCrud.address') }}</th>
+                  <th>{{ $t('slotsCrud.street') }}</th>
+                  <th>{{ $t('slotsCrud.position') }}</th>
+                  <th>{{ $t('slotsCrud.lane') }}</th>
+                  <th>{{ $t('slotsCrud.status') }}</th>
+                  <th>{{ $t('slotsCrud.sku') }}</th>
+                  <th>{{ $t('slotsCrud.updatedAt') }}</th>
+                  <th class="actions-column">{{ $t('slotsCrud.actions') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="slot in filteredSlots" :key="slot.id">
+                  <td>
+                    <code class="address-code">{{ slot.address }}</code>
+                  </td>
+                  <td>{{ slot.street }}</td>
+                  <td>{{ slot.position }}</td>
+                  <td>{{ slot.lane }}</td>
+                  <td>
+                    <span 
+                      class="tag" 
+                      :class="slot.status === 'occupied' ? 'tag-red' : 'tag-green'"
+                    >
+                      {{ $t(`slotsCrud.${slot.status}`) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span v-if="slot.sku" class="sku-badge">{{ slot.sku }}</span>
+                    <span v-else class="text-muted">—</span>
+                  </td>
+                  <td class="date-cell">{{ formatDate(slot.updated_at) }}</td>
+                  <td class="actions-cell">
+                    <button 
+                      class="icon-btn" 
+                      @click="editSlot(slot)"
+                      :title="$t('slotsCrud.edit')"
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      class="icon-btn icon-btn--red" 
+                      @click="confirmDelete(slot)"
+                      :title="$t('slotsCrud.delete')"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <!-- Empty State -->
           <div v-if="filteredSlots.length === 0" class="empty-state">
@@ -534,7 +536,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow: auto;
+  overflow: hidden;
+  flex: 1;
 }
 
 /* Table card */
@@ -543,6 +546,17 @@ onMounted(() => {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Table wrapper for scrolling */
+.table-wrapper {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
 }
 
 /* Detail table */
@@ -562,6 +576,9 @@ onMounted(() => {
   font-size: 11px;
   letter-spacing: .06em;
   text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .detail-table td {
@@ -636,9 +653,19 @@ onMounted(() => {
 
 /* Empty state */
 .empty-state {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 4rem 2rem;
   color: var(--text-2);
+  background: var(--bg-1);
 }
 
 .empty-icon {
