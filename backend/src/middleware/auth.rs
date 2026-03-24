@@ -5,17 +5,14 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-// Role constants
-pub const ROLE_ADMIN: i32 = 1;
-pub const ROLE_OPERATOR: i32 = 2;
-pub const ROLE_VIEWER: i32 = 3;
+use crate::models::role::{UserRole, ROLE_ADMIN};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub:      Uuid,
+    pub sub: Uuid,
     pub username: String,
-    pub role:     i32,
-    pub exp:      usize,
+    pub role: i32,
+    pub exp: usize,
 }
 
 /// Extractor: `AuthUser` in handler params → validates JWT automatically
@@ -27,15 +24,20 @@ impl AuthUser {
         &self.0
     }
 
-    pub fn require_role(&self, role: i32) -> Result<(), AppError> {
-        if self.0.role == ROLE_ADMIN || self.0.role == role {
+    pub fn require_role(&self, role: UserRole) -> Result<(), AppError> {
+        let role_i32 = role.as_i32();
+        if self.0.role == ROLE_ADMIN.as_i32() || self.0.role == role_i32 {
             Ok(())
         } else {
             Err(AppError::Forbidden(format!(
-                "Required role '{}', you have '{}'",
+                "Required role '{:?}', you have '{}'",
                 role, self.0.role
             )))
         }
+    }
+
+    pub fn role(&self) -> UserRole {
+        UserRole::try_from(self.0.role).unwrap_or(UserRole::Operator)
     }
 }
 
@@ -74,18 +76,27 @@ fn extract_claims(req: &HttpRequest) -> Result<Claims, AppError> {
 }
 
 pub fn create_token(
-    user_id:  Uuid,
+    user_id: Uuid,
     username: String,
-    role:     i32,
-    secret:   &str,
+    role: i32,
+    secret: &str,
     expiry_h: i64,
 ) -> Result<String, AppError> {
     use chrono::Utc;
     use jsonwebtoken::{encode, EncodingKey, Header};
 
     let exp = (Utc::now() + chrono::Duration::hours(expiry_h)).timestamp() as usize;
-    let claims = Claims { sub: user_id, username, role, exp };
+    let claims = Claims {
+        sub: user_id,
+        username,
+        role,
+        exp,
+    };
 
-    encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_bytes()))
-        .map_err(|e| AppError::Internal(e.to_string()))
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
+    .map_err(|e| AppError::Internal(e.to_string()))
 }

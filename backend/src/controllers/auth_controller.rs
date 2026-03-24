@@ -3,7 +3,8 @@ use crate::{
     config::AppConfig,
     db::database::Database,
     errors::{AppError, AppResult},
-    middleware::auth::{create_token, AuthUser, ROLE_OPERATOR},
+    middleware::auth::{create_token, AuthUser},
+    models::role::ROLE_OPERATOR,
     models::user::{NewUser, User},
     db::schema::users,
 };
@@ -140,7 +141,7 @@ pub async fn register(
     let encrypted_password = password_hash(body.password.clone());
 
     let now = Utc::now().naive_utc();
-    let role = body.role.unwrap_or(ROLE_OPERATOR);
+    let role = body.role.unwrap_or(ROLE_OPERATOR.as_i32());
 
     let new_user = NewUser {
         id:         Uuid::new_v4(),

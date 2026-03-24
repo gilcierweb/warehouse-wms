@@ -1,8 +1,8 @@
 use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
-use diesel::{Queryable, Insertable, AsChangeset, Associations, Selectable};
-use uuid::Uuid;
 use diesel::pg::Pg;
+use diesel::{AsChangeset, Associations, Insertable, Queryable, Selectable};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::db::schema::alert_configs;
 

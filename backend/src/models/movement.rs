@@ -1,14 +1,24 @@
 use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
-use diesel::{Queryable, Insertable, AsChangeset, Associations, Selectable};
-use uuid::Uuid;
 use diesel::pg::Pg;
+use diesel::{AsChangeset, Associations, Insertable, Queryable, Selectable};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::db::schema::movements;
 
 use super::user::User;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Queryable, Associations, Insertable, AsChangeset, Selectable)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Debug,
+    Clone,
+    Queryable,
+    Associations,
+    Insertable,
+    AsChangeset,
+    Selectable,
+)]
 #[diesel(check_for_backend(Pg))]
 #[diesel(belongs_to(User, foreign_key = operator_id))]
 #[diesel(table_name = movements)]

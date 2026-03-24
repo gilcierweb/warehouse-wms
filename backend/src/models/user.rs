@@ -1,15 +1,15 @@
 use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
-use diesel::{Queryable, Insertable, AsChangeset, Selectable};
-use uuid::Uuid;
 use diesel::pg::Pg;
+use diesel::{AsChangeset, Insertable, Queryable, Selectable};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::db::schema::users;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable, Insertable, AsChangeset, Selectable)]
 #[diesel(check_for_backend(Pg))]
 #[diesel(table_name = users)]
-pub struct User {  
+pub struct User {
     #[serde(default)]
     // #[serde(skip_serializing)]
     pub id: Uuid,
@@ -23,7 +23,7 @@ pub struct User {
     #[serde(skip_serializing)]
     pub sign_in_count: i32,
     pub current_sign_in_at: Option<chrono::NaiveDateTime>,
-    pub last_sign_in_at: Option<chrono::NaiveDateTime>,   
+    pub last_sign_in_at: Option<chrono::NaiveDateTime>,
     pub current_sign_in_ip: Option<String>,
     pub last_sign_in_ip: Option<String>,
     pub role: i32,
