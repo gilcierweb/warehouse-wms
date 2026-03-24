@@ -169,28 +169,19 @@ const handleLogin = async () => {
   isLoading.value = true
 
   try {
-    console.log('🔐 Attempting login with:', username.value)
     await login(username.value, password.value)
-    
-    console.log('✅ Login successful')
-    console.log('🔍 isAuthenticated:', isAuthenticated.value)
-    console.log('👤 user:', user.value || 'null')
     
     push({ type: 'success', message: 'Welcome back!' })
 
     const redirect = sessionStorage.getItem('redirectAfterLogin')
-    console.log('🔄 Redirect path:', redirect)
     
     if (redirect) {
       sessionStorage.removeItem('redirectAfterLogin')
-      console.log('🚀 Navigating to redirect:', redirect)
       await navigateTo(redirect)
     } else {
-      console.log('🚀 Navigating to home: /')
       await navigateTo('/')
     }
   } catch (err: any) {
-    console.error('❌ Login error:', err)
     error.value = err?.data?.message || err?.message || t('auth.invalidCredentials')
     push({ type: 'danger', message: error.value })
   } finally {
@@ -199,14 +190,10 @@ const handleLogin = async () => {
 }
 
 onMounted(() => {
-  console.log('🔐 Login page mounted')
-  console.log('🔍 Initial auth state - Token:', isAuthenticated.value, 'User:', user.value || 'null')
-  
   initAuth()
   
   // Watch for auth state changes
   watch([isAuthenticated, user], ([newAuth, newUser]) => {
-    console.log('👁 Auth state changed - IsAuthenticated:', newAuth, 'User:', newUser || 'null')
   }, { immediate: true })
 })
 </script>
