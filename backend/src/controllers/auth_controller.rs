@@ -54,7 +54,7 @@ pub async fn login(
     let username_for_error = username.clone(); // Clone for error message
 
     let user: User = web::block(move || {
-        // Try to find user by username first, then by email
+        println!("DEBUG: Querying database for user with username: {}", username);
         let by_username = users::table
             .filter(users::username.eq(&username))
             .filter(users::status.eq(true))
@@ -63,16 +63,26 @@ pub async fn login(
             .optional()?;
             
         if by_username.is_some() {
+            println!("DEBUG: User found by username");
             return Ok(by_username);
         }
         
         // If not found by username, try by email
-        users::table
+        println!("DEBUG: User not found by username, trying by email");
+        let by_email = users::table
             .filter(users::email.eq(&username))
             .filter(users::status.eq(true))
             .select(User::as_select())
             .first(&mut conn)
-            .optional()
+            .optional()?;
+        
+        if by_email.is_some() {
+            println!("DEBUG: User found by email");
+            return Ok(by_email);
+        }
+        
+        println!("DEBUG: User not found by email");
+        Err(diesel::result::Error::NotFound)
     })
     .await
     .map_err(|e| AppError::Internal(e.to_string()))?
