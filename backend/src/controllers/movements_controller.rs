@@ -2,15 +2,13 @@ use actix_web::{delete, get, HttpResponse, post, put, web, Error};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use serde::Deserialize;
-use serde_json;
 use uuid::Uuid;
 use rust_i18n::t;
 
 use crate::db::database::Database;
 use crate::db::schema::{movements, slots};
-use crate::models::{movement::Movement, slot::Slot};
-use crate::repositories::base_repository::BaseRepository;
-use crate::repositories::movements_repository::MovementRepository;
+use crate::models::{movement::Movement, movement::NewMovement, slot::Slot};
+use crate::repositories::AppContainer;
 
 #[derive(Debug, Deserialize)]
 pub struct MovementFilter {
@@ -30,19 +28,10 @@ pub struct UndoRequest {
 
 /// GET /api/movements
 #[get("/movements")]
-pub async fn get_movements(db: web::Data<Database>) -> Result<HttpResponse, Error> {
-    let result = MovementRepository::new(db, None).all();
-    match result {
-        Ok(movements) => {
-            let response = serde_json::to_string(&movements).unwrap();
-
-            Ok(HttpResponse::Ok()
-                .content_type("application/json")
-                .body(response))
-        },
-        Err(err) => {
-            Ok(HttpResponse::InternalServerError().body(err.to_string()))
-        }
+pub async fn get_movements(container: web::Data<AppContainer>) -> Result<HttpResponse, Error> {
+    match container.movements.all().await {
+        Ok(items) => Ok(HttpResponse::Ok().json(items)),
+        Err(err) => Ok(HttpResponse::InternalServerError().body(err.to_string())),
     }
 }
 
@@ -106,7 +95,7 @@ pub async fn undo_movement(
     db: web::Data<Database>,
     body: web::Json<UndoRequest>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let mut conn = db.pool.get().map_err(|e| {
+    let mut conn = db.pool.get().map_err(|_e| {
         actix_web::error::ErrorInternalServerError("Database connection error")
     })?;
     let addr = body.slot_address.to_uppercase();
@@ -140,7 +129,6 @@ pub async fn undo_movement(
                 .execute(conn)?;
 
             // 5. Registra o undo como novo movimento
-            use crate::models::movement::NewMovement;
             diesel::insert_into(movements::table)
                 .values(&NewMovement {
                     slot_id: Some(slot.id),
@@ -166,45 +154,46 @@ pub async fn undo_movement(
 
 /// POST /api/movements
 #[post("/movements")]
-pub async fn create_movement(db: web::Data<Database>, new_movement: web::Json<Movement>) -> HttpResponse {
-    let movement = MovementRepository::new(db, None).create(&mut new_movement.into_inner());
-
-    match movement {
+pub async fn create_movement(
+    container: web::Data<AppContainer>,
+    new_movement: web::Json<NewMovement>,
+) -> HttpResponse {
+    match container.movements.create(&new_movement.into_inner()).await {
         Ok(movement) => HttpResponse::Ok().json(movement),
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
     }
 }
 
 #[get("/movements/{id}")]
-pub async fn get_movement_by_id(db: web::Data<Database>, id: web::Path<Uuid>) -> HttpResponse {
-    let movement = MovementRepository::new(db, None).find(&id);
-
-    match movement {
-        Some(movement) => HttpResponse::Ok().json(movement),
-        None => HttpResponse::NotFound().body(t!("movements.get.not_found").to_string()),
+pub async fn get_movement_by_id(
+    container: web::Data<AppContainer>,
+    id: web::Path<Uuid>,
+) -> HttpResponse {
+    match container.movements.find(&id).await {
+        Ok(movement) => HttpResponse::Ok().json(movement),
+        Err(_) => HttpResponse::NotFound().body(t!("movements.get.not_found").to_string()),
     }
 }
 
 #[put("/movements/{id}")]
 pub async fn update_movement_by_id(
-    db: web::Data<Database>,
+    container: web::Data<AppContainer>,
     id: web::Path<Uuid>,
-    updated_movement: web::Json<Movement>,
+    updated_movement: web::Json<NewMovement>,
 ) -> HttpResponse {
-    let movement = MovementRepository::new(db, None).update(&id, &mut updated_movement.into_inner());
-
-    match movement {
-        Some(movement) => HttpResponse::Ok().json(movement),
-        None => HttpResponse::NotFound().body(t!("movements.get.not_found").to_string()),
+    match container.movements.update(&id, &updated_movement.into_inner()).await {
+        Ok(movement) => HttpResponse::Ok().json(movement),
+        Err(_) => HttpResponse::NotFound().body(t!("movements.get.not_found").to_string()),
     }
 }
 
 #[delete("/movements/{id}")]
-pub async fn delete_movement_by_id(db: web::Data<Database>, id: web::Path<Uuid>) -> HttpResponse {
-    let movement = MovementRepository::new(db, None).delete(&id);
-
-    match movement {
-        Some(_) => HttpResponse::Ok().finish(),
-        None => HttpResponse::NotFound().body(t!("movements.get.not_found").to_string()),
+pub async fn delete_movement_by_id(
+    container: web::Data<AppContainer>,
+    id: web::Path<Uuid>,
+) -> HttpResponse {
+    match container.movements.destroy(&id).await {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::NotFound().body(t!("movements.get.not_found").to_string()),
     }
 }

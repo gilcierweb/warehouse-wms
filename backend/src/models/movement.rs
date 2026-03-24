@@ -35,7 +35,7 @@ pub struct Movement {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable, AsChangeset)]
 #[diesel(table_name = movements)]
 pub struct NewMovement {
     pub slot_id: Option<Uuid>,

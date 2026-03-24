@@ -36,6 +36,7 @@ cargo add actix-rt
 cargo add thiserror
 cargo add rust_xlsxwriter
 cargo add rust-i18n
+cargo add async-trait
 
 cargo install diesel_cli --no-default-features --features postgres
 export DATABASE_URL=postgres://username:password@localhost:5432/warehouse_wms_development

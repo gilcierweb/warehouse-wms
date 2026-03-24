@@ -8,7 +8,7 @@ use crate::{
     models::user::{NewUser, User},
     db::schema::users,
 };
-use actix_web::{web, HttpResponse, post, get};
+use actix_web::{web, HttpResponse, post, get, HttpRequest};
 use chrono::Utc;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -58,6 +58,7 @@ pub async fn login(
     db:   web::Data<Database>,
     config: web::Data<AppConfig>,
     body:   web::Json<LoginRequest>,
+    req: HttpRequest,
 ) -> AppResult<HttpResponse> {
     println!("DEBUG: Login attempt for username: {}", body.username);
     
@@ -113,21 +114,50 @@ pub async fn login(
         return Err(AppError::Unauthorized);
     }
 
+    // Extract client IP for login tracking
+    let login_ip = req
+        .connection_info()
+        .realip_remote_addr()
+        .map(|addr| addr.to_string())
+        .or_else(|| req.peer_addr().map(|addr| addr.ip().to_string()))
+        .unwrap_or_else(|| "unknown".to_string());
+
+    let now = Utc::now().naive_utc();
+    let user_id = user.id;
+
+    // Update user login info in separate block
+    let updated_user: User = web::block(move || {
+        let mut conn = db.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        diesel::update(users::table.filter(users::id.eq(user_id)))
+            .set((
+                users::current_sign_in_at.eq(Some(now)),
+                users::last_sign_in_at.eq(user.current_sign_in_at),
+                users::current_sign_in_ip.eq(Some(login_ip.clone())),
+                users::last_sign_in_ip.eq(user.current_sign_in_ip),
+                users::sign_in_count.eq(users::sign_in_count + 1),
+            ))
+            .returning(User::as_returning())
+            .get_result(&mut conn)
+            .map_err(|e| AppError::Internal(e.to_string()))
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.to_string()))??;
+
     let token = create_token(
-        user.id,
-        user.username.clone(),
-        user.role,
+        updated_user.id,
+        updated_user.username.clone(),
+        updated_user.role,
         &config.jwt_secret,
         config.jwt_expiry_hours,
     )?;
 
-    println!("DEBUG: Login successful for user: {}", user.username);
+    println!("DEBUG: Login successful for user: {}", updated_user.username);
 
     Ok(HttpResponse::Ok().json(AuthResponse {
         token,
-        user_id:  user.id,
-        username: user.username,
-        role:     user.role,
+        user_id:  updated_user.id,
+        username: updated_user.username,
+        role:     updated_user.role,
     }))
 }
 
@@ -136,6 +166,7 @@ pub async fn login(
 pub async fn register(
     db: web::Data<Database>,
     body: web::Json<RegisterRequest>,
+    req: HttpRequest,
 ) -> AppResult<HttpResponse> {
     let mut conn = db.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
 
@@ -143,6 +174,14 @@ pub async fn register(
 
     let now = Utc::now().naive_utc();
     let role = body.role.unwrap_or(ROLE_OPERATOR.as_i32());
+
+    // Extract client IP
+    let ip = req
+        .connection_info()
+        .realip_remote_addr()
+        .map(|addr| addr.to_string())
+        .or_else(|| req.peer_addr().map(|addr| addr.ip().to_string()))
+        .unwrap_or_else(|| "unknown".to_string());
 
     let new_user = NewUser {
         id:         Uuid::new_v4(),
@@ -155,8 +194,8 @@ pub async fn register(
         updated_at: now,
         current_sign_in_at: None,
         last_sign_in_at: None,
-        current_sign_in_ip: None,
-        last_sign_in_ip: None,
+        current_sign_in_ip: Some(ip.clone()),
+        last_sign_in_ip: Some(ip),
     };
 
     let user: User = web::block(move || {

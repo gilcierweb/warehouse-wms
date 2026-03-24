@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 use diesel::pg::Pg;
-use diesel::{AsChangeset, Associations, Insertable, Queryable, Selectable};
+use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -20,7 +20,7 @@ pub struct AlertConfig {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable, AsChangeset)]
 #[diesel(table_name = alert_configs)]
 pub struct NewAlertConfig {
     pub threshold_pct: i16,

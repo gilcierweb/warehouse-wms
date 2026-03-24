@@ -1,14 +1,11 @@
 use actix_web::{get, post, web, HttpResponse, Error, error::{ErrorInternalServerError, ErrorNotFound}};
-use chrono::Utc;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use rust_i18n::t;
 
 use crate::db::database::Database;
 use crate::db::schema::{movements, slots};
-use crate::models::{movement::NewMovement, slot::Slot, slot::StreetStat, slot::UpdateSlot, slot::WarehouseStats};
-use crate::repositories::slots_repository::SlotRepository;
-use crate::repositories::base_repository::BaseRepository;
+use crate::models::{movement::NewMovement, slot::Slot, slot::StreetStat, slot::WarehouseStats};
 use crate::ws::server::{HubData, WsEvent};
 
 // ── Request / Response DTOs ───────────────────────────────────

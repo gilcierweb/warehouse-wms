@@ -50,6 +50,9 @@ async fn main() -> std::io::Result<()> {
     let config_data = web::Data::new(config.clone());
     
     let api_db = db::database::Database::new();
+    let container = web::Data::new(
+        repositories::AppContainer::new(api_db.pool.clone())
+    );
     let app_data = web::Data::new(api_db);
     let ws_hub = web::Data::new(ws::server::WsHub::new());
         
@@ -74,6 +77,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(actix_web::middleware::Logger::default())
             .wrap(actix_web::middleware::Compress::default())
             .app_data(app_data.clone())
+            .app_data(container.clone())
             .app_data(config_data.clone())
             .app_data(ws_hub.clone())
             .configure(routes::router::config)
