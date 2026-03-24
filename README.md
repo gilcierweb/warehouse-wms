@@ -170,6 +170,8 @@ npm install
 
 # Start in development mode
 npm run dev
+
+pnpm add tailwindcss @tailwindcss/vite
 ```
 
 ---

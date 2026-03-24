@@ -69,7 +69,10 @@
 <script setup lang="ts">
 import type { Movement } from '~/types'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ 
+  layout: 'default',
+  middleware: ['auth']
+})
 
 const api = useWarehouseApi()
 const PAGE_SIZE = 50

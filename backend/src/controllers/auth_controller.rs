@@ -1,7 +1,7 @@
 use crate::{
     auth::password::{password_hash, verify},
     config::AppConfig,
-    db::database::DBPool,
+    db::database::Database,
     errors::{AppError, AppResult},
     middleware::auth::{create_token, AuthUser, ROLE_OPERATOR},
     models::user::{NewUser, User},
@@ -42,17 +42,33 @@ pub struct AuthResponse {
 // POST /api/auth/login
 #[post("/login")]
 pub async fn login(
-    pool:   web::Data<DBPool>,
+    db:   web::Data<Database>,
     config: web::Data<AppConfig>,
     body:   web::Json<LoginRequest>,
 ) -> AppResult<HttpResponse> {
-    let mut conn = pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+    println!("DEBUG: Login attempt for username: {}", body.username);
+    
+    let mut conn = db.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
     let username  = body.username.clone();
     let password  = body.password.clone();
+    let username_for_error = username.clone(); // Clone for error message
 
     let user: User = web::block(move || {
-        users::table
+        // Try to find user by username first, then by email
+        let by_username = users::table
             .filter(users::username.eq(&username))
+            .filter(users::status.eq(true))
+            .select(User::as_select())
+            .first(&mut conn)
+            .optional()?;
+            
+        if by_username.is_some() {
+            return Ok(by_username);
+        }
+        
+        // If not found by username, try by email
+        users::table
+            .filter(users::email.eq(&username))
             .filter(users::status.eq(true))
             .select(User::as_select())
             .first(&mut conn)
@@ -61,9 +77,14 @@ pub async fn login(
     .await
     .map_err(|e| AppError::Internal(e.to_string()))?
     .map_err(AppError::Database)?
-    .ok_or(AppError::Unauthorized)?;
+    .ok_or_else(|| {
+        println!("DEBUG: User not found: {}", username_for_error);
+        AppError::Unauthorized
+    })?;
 
+    println!("DEBUG: User found: {}, verifying password...", user.username);
     let valid = verify(password, user.encrypted_password.clone());
+    println!("DEBUG: Password verification result: {}", valid);
 
     if !valid {
         return Err(AppError::Unauthorized);
@@ -77,6 +98,8 @@ pub async fn login(
         config.jwt_expiry_hours,
     )?;
 
+    println!("DEBUG: Login successful for user: {}", user.username);
+
     Ok(HttpResponse::Ok().json(AuthResponse {
         token,
         user_id:  user.id,
@@ -88,10 +111,10 @@ pub async fn login(
 // POST /api/auth/register (admin only in production — open for setup)
 #[post("/register")]
 pub async fn register(
-    pool: web::Data<DBPool>,
+    db: web::Data<Database>,
     body: web::Json<RegisterRequest>,
 ) -> AppResult<HttpResponse> {
-    let mut conn = pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+    let mut conn = db.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
 
     let encrypted_password = password_hash(body.password.clone());
 

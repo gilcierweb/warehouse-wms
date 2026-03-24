@@ -112,7 +112,10 @@
 <script setup lang="ts">
 import type { Slot } from '~/types'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ 
+  layout: 'default',
+  middleware: ['auth']
+})
 
 const api = useWarehouseApi()
 const store = useWarehouseStore()

@@ -25,6 +25,9 @@
       <button class="action-btn" title="Configurações" @click="$router.push('/settings')">
         <span>⚙</span>
       </button>
+      <button v-if="isAuthenticated" class="action-btn logout-btn" title="Logout" @click="handleLogout">
+        <span>⏻</span>
+      </button>
     </div>
   </header>
 </template>
@@ -34,6 +37,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useWarehouseStore()
 const { push } = useAlerts()
+const { isAuthenticated, logout } = useAuth()
 
 const navItems = [
   { path: '/', label: 'Mapa', icon: '◪' },
@@ -57,6 +61,10 @@ async function refreshData() {
   } catch {
     push({ type: 'danger', message: 'Falha ao atualizar dados' })
   }
+}
+
+function handleLogout() {
+  logout()
 }
 </script>
 
@@ -162,4 +170,15 @@ async function refreshData() {
 .action-btn:active {
   transform: scale(.95);
 }
-</style>   
+
+.logout-btn {
+  background: var(--red-bg);
+  border-color: var(--red-dim);
+  color: var(--red);
+}
+
+.logout-btn:hover {
+  background: var(--red);
+  color: white;
+}
+</style>

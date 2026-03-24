@@ -98,7 +98,10 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+definePageMeta({ 
+  layout: 'default',
+  middleware: ['auth']
+})
 
 const store = useWarehouseStore()
 const { streets, globalStats } = store

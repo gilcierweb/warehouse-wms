@@ -48,3 +48,17 @@ export interface AlertConfig {
   notifyEmail: boolean
   notifyBrowser: boolean
 }
+
+export interface User {
+  id: string
+  username: string
+  email?: string
+  role: number
+}
+
+export interface AuthResponse {
+  token: string
+  user_id: string
+  username: string
+  role: number
+}

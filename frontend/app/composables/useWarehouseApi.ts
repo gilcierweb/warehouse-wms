@@ -3,59 +3,68 @@ import type { Slot, Movement, WarehouseStats } from '~/types'
 export const useWarehouseApi = () => {
   const config = useRuntimeConfig()
   const base = config.public.apiBase
+  const { token, logout } = useAuth()
+
+  // Helper to get headers with auth
+  const getHeaders = (contentType = true): Record<string, string> => {
+    const headers: Record<string, string> = {}
+    if (token.value) {
+      headers['Authorization'] = `Bearer ${token.value}`
+    }
+    if (contentType) {
+      headers['Content-Type'] = 'application/json'
+    }
+    return headers
+  }
+
+  // Handle 401 errors
+  const handleResponse = async (response: Response) => {
+    if (response.status === 401) {
+      logout()
+      throw new Error('Session expired. Please login again.')
+    }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw errorData
+    }
+    return response.json()
+  }
 
   // ── Slots ──────────────────────────────────────────────
   async function fetchSlots(): Promise<Slot[]> {
-    try {
-      return await $fetch<Slot[]>(`${base}/api/slots`)
-    } catch (error: any) {
-      // Se for erro 404, tentar extrair corpo da resposta
-      if (error.name === 'FetchError' && error.response?.status === 404) {
-        throw error.response._data || error
-      }
-      throw error
-    }
+    const response = await fetch(`${base}/api/slots`, {
+      headers: getHeaders(false)
+    })
+    return handleResponse(response)
   }
 
-  async function entry(slotId: string, sku?: string, note?: string) {
-    console.log('API: Chamando entry para slot', slotId)
+  async function entry(slotId: string, sku?: string, note?: string): Promise<Slot> {
+    console.log('API: Calling entry for slot', slotId)
     const response = await fetch(`${base}/api/slots/${encodeURIComponent(slotId)}/entry`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sku, note }),
+      headers: getHeaders(),
+      body: JSON.stringify({ sku, note })
     })
-  
-    if (response.ok) {
-      const result = await response.json() as Slot
-      console.log('API: Entry sucesso', result)
-      return result
-    } else {
-      // Para erros, tentar extrair corpo da resposta
-      const errorData = await response.json().catch(() => ({}))
-      console.log('API: Entry erro', errorData)
-      throw errorData
-    }
+    const result = await handleResponse(response)
+    console.log('API: Entry success', result)
+    return result
   }
 
-  async function exit(slotId: string, note?: string) {
+  async function exit(slotId: string, note?: string): Promise<Slot> {
     const response = await fetch(`${base}/api/slots/${encodeURIComponent(slotId)}/exit`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note }),
+      headers: getHeaders(),
+      body: JSON.stringify({ note })
     })
-  
-    if (response.ok) {
-      return await response.json() as Slot
-    } else {
-      // Para erros, tentar extrair corpo da resposta
-      const errorData = await response.json().catch(() => ({}))
-      throw errorData
-    }
+    return handleResponse(response)
   }
 
   // ── Stats ──────────────────────────────────────────────
   async function fetchStats(): Promise<WarehouseStats> {
-    return $fetch<WarehouseStats>(`${base}/api/stats`)
+    const response = await fetch(`${base}/api/stats`, {
+      headers: getHeaders(false)
+    })
+    return handleResponse(response)
   }
 
   // ── History ────────────────────────────────────────────
@@ -67,23 +76,43 @@ export const useWarehouseApi = () => {
     limit?: number
     offset?: number
   }): Promise<Movement[]> {
-    return $fetch<Movement[]>(`${base}/api/movements`, { params })
+    const queryParams = new URLSearchParams()
+    if (params?.slotId) queryParams.append('slotId', params.slotId)
+    if (params?.type) queryParams.append('type', params.type)
+    if (params?.from) queryParams.append('from', params.from)
+    if (params?.to) queryParams.append('to', params.to)
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.offset) queryParams.append('offset', params.offset.toString())
+
+    const query = queryParams.toString()
+    const response = await fetch(`${base}/api/movements${query ? `?${query}` : ''}`, {
+      headers: getHeaders(false)
+    })
+    return handleResponse(response)
   }
 
-  async function undoLastMovement(slotId: string) {
-    return $fetch(`${base}/api/movements/undo`, {
+  async function undoLastMovement(slotId: string): Promise<void> {
+    const response = await fetch(`${base}/api/movements/undo`, {
       method: 'POST',
-      body: { slotId },
+      headers: getHeaders(),
+      body: JSON.stringify({ slotId })
     })
+    return handleResponse(response)
   }
 
   // ── Export ─────────────────────────────────────────────
-  function downloadExcel() {
-    window.open(`${base}/api/export/excel`, '_blank')
+  function downloadExcel(): void {
+    const url = token.value
+      ? `${base}/api/export/excel?token=${token.value}`
+      : `${base}/api/export/excel`
+    window.open(url, '_blank')
   }
 
-  function downloadPdf() {
-    window.open(`${base}/api/export/pdf`, '_blank')
+  function downloadPdf(): void {
+    const url = token.value
+      ? `${base}/api/export/pdf?token=${token.value}`
+      : `${base}/api/export/pdf`
+    window.open(url, '_blank')
   }
 
   return {
