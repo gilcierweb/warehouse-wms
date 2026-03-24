@@ -41,8 +41,8 @@
         </div>
         
         <div class="auth-subheader">
-          <h3 class="auth-heading">New Password</h3>
-          <p class="auth-desc">Enter your new password</p>
+          <h3 class="auth-heading">{{ $t('auth.newPassword') }}</h3>
+          <p class="auth-desc">{{ $t('auth.enterNewPassword') }}</p>
         </div>
 
         <!-- Invalid Token Error -->
@@ -50,7 +50,7 @@
           <svg class="auth-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>Invalid or expired reset token</span>
+          <span>{{ $t('auth.invalidOrExpiredToken') }}</span>
         </div>
 
         <!-- Success Message -->
@@ -60,10 +60,10 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h4 class="auth-success-title">Password Reset!</h4>
-          <p class="auth-success-desc">Your password has been updated successfully</p>
+          <h4 class="auth-success-title">{{ $t('auth.resetPassword') }}!</h4>
+          <p class="auth-success-desc">{{ $t('auth.passwordResetSuccess') }}</p>
           <NuxtLink to="/login" class="auth-submit-btn auth-submit-btn-link">
-            Go to Login
+            {{ $t('auth.signIn') }}
           </NuxtLink>
         </div>
 
@@ -71,13 +71,13 @@
         <form v-else class="auth-form" @submit.prevent="handleSubmit">
           <!-- Password -->
           <div class="auth-field">
-            <label class="auth-label" for="newPassword">New Password*</label>
+            <label class="auth-label" for="newPassword">{{ $t('auth.newPassword') }}*</label>
             <div class="auth-input-group">
               <input 
                 id="newPassword" 
                 v-model="password" 
                 :type="showPassword ? 'text' : 'password'" 
-                placeholder="Enter new password" 
+                :placeholder="$t('auth.passwordMinLength')" 
                 required 
                 minlength="8"
                 class="auth-input-password"
@@ -101,13 +101,13 @@
 
           <!-- Confirm Password -->
           <div class="auth-field">
-            <label class="auth-label" for="confirmPassword">Confirm Password*</label>
+            <label class="auth-label" for="confirmPassword">{{ $t('auth.confirmPassword') }}*</label>
             <div class="auth-input-group">
               <input 
                 id="confirmPassword" 
                 v-model="confirmPassword" 
                 :type="showConfirmPassword ? 'text' : 'password'" 
-                placeholder="Confirm new password" 
+                :placeholder="$t('auth.confirmPassword')" 
                 required 
                 minlength="8"
                 class="auth-input-password"
@@ -134,7 +134,7 @@
             <svg class="auth-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>Passwords do not match</span>
+            <span>{{ $t('auth.passwordMismatch') }}</span>
           </div>
 
           <!-- Submit Button -->
@@ -144,15 +144,15 @@
             :disabled="isLoading"
           >
             <span v-if="isLoading" class="auth-spinner"></span>
-            <span v-else>Reset Password</span>
+            <span v-else>{{ $t('auth.resetPassword') }}</span>
           </button>
         </form>
 
         <!-- Login Link -->
         <p v-if="!success" class="auth-footer-text">
-          Remember your password?
+          {{ $t('auth.alreadyHaveAccount') }}
           <NuxtLink to="/login" class="auth-link">
-            Sign in
+            {{ $t('auth.signIn') }}
           </NuxtLink>
         </p>
       </div>
@@ -170,6 +170,7 @@ definePageMeta({
 const route = useRoute()
 const { resetPassword } = useAuth()
 const { push } = useAlerts()
+const t = useI18n()
 
 const token = computed(() => route.query.token as string || '')
 const password = ref('')
@@ -199,10 +200,10 @@ const handleSubmit = async () => {
   try {
     await resetPassword(token.value, password.value)
     success.value = true
-    push({ type: 'success', message: 'Password reset successfully!' })
+    push({ type: 'success', message: t('auth.passwordResetSuccess') })
   } catch (err: any) {
     invalidToken.value = true
-    push({ type: 'danger', message: err?.message || 'Invalid or expired token' })
+    push({ type: 'danger', message: err?.message || t('auth.invalidOrExpiredToken') })
   } finally {
     isLoading.value = false
   }

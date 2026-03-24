@@ -41,20 +41,20 @@
         </div>
         
         <div class="auth-subheader">
-          <h3 class="auth-heading">Reset Password</h3>
-          <p class="auth-desc">Enter your email to receive a reset link</p>
+          <h3 class="auth-heading">{{ $t('auth.resetPassword') }}</h3>
+          <p class="auth-desc">{{ $t('auth.sendResetLink') }}</p>
         </div>
 
         <!-- Form -->
         <form v-if="!emailSent" class="auth-form" @submit.prevent="handleSubmit">
           <!-- Email -->
           <div class="auth-field">
-            <label class="auth-label" for="recoveryEmail">Email*</label>
+            <label class="auth-label" for="recoveryEmail">{{ $t('auth.email') }}*</label>
             <input 
               id="recoveryEmail" 
               v-model="email" 
               type="email" 
-              placeholder="Enter your email" 
+              :placeholder="$t('auth.email')" 
               class="auth-input" 
               required 
             />
@@ -75,7 +75,7 @@
             :disabled="isLoading"
           >
             <span v-if="isLoading" class="auth-spinner"></span>
-            <span v-else>Send Reset Link</span>
+            <span v-else>{{ $t('auth.sendResetLink') }}</span>
           </button>
         </form>
 
@@ -86,8 +86,8 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h4 class="auth-success-title">Check your email</h4>
-          <p class="auth-success-desc">We've sent a password reset link to <strong>{{ email }}</strong></p>
+          <h4 class="auth-success-title">{{ $t('auth.checkYourEmail') }}</h4>
+          <p class="auth-success-desc">{{ $t('auth.weSentResetLink') }} <strong>{{ email }}</strong></p>
           <div class="auth-token-box">
             <p class="auth-token-label">Reset Token (for testing):</p>
             <code class="auth-token">{{ recoveryToken }}</code>
@@ -99,17 +99,17 @@
 
         <!-- Login Link -->
         <p class="auth-footer-text">
-          Remember your password?
+          {{ $t('auth.alreadyHaveAccount') }}
           <NuxtLink to="/login" class="auth-link">
-            Sign in
+            {{ $t('auth.signIn') }}
           </NuxtLink>
         </p>
 
         <!-- Register Link -->
         <p class="auth-footer-text">
-          New on our platform?
+          {{ $t('auth.newOnPlatform') }}
           <NuxtLink to="/register" class="auth-link">
-            Create an account
+            {{ $t('auth.createAccount') }}
           </NuxtLink>
         </p>
       </div>
@@ -126,6 +126,7 @@ definePageMeta({
 
 const { recoverPassword } = useAuth()
 const { push } = useAlerts()
+const t = useI18n()
 
 const email = ref('')
 const isLoading = ref(false)
@@ -140,11 +141,10 @@ const handleSubmit = async () => {
   try {
     const response = await recoverPassword(email.value)
     emailSent.value = true
-    // Token returned from backend API (in production this would come from email)
     recoveryToken.value = response.token || ''
-    push({ type: 'success', message: 'Reset link sent to your email!' })
+    push({ type: 'success', message: t('auth.resetLinkSent') })
   } catch (err: any) {
-    error.value = err?.message || 'Failed to send reset link'
+    error.value = err?.message || t('errors.generic')
     push({ type: 'danger', message: error.value })
   } finally {
     isLoading.value = false

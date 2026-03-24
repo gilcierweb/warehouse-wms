@@ -1,18 +1,18 @@
 <template>
   <div class="action-panel">
     <div class="panel-header">
-      <span class="panel-title">CONTROLE DE POSIÇÃO</span>
+      <span class="panel-title">{{ $t('actionPanel.title') }}</span>
     </div>
 
     <div class="panel-body">
       <!-- Address input -->
       <div class="field-group">
-        <label class="field-label">Endereço</label>
+        <label class="field-label">{{ $t('actionPanel.address') }}</label>
         <input
           ref="locRef"
           v-model="location"
           type="text"
-          placeholder="A-1-N1"
+          :placeholder="$t('actionPanel.addressPlaceholder')"
           maxlength="8"
           style="width:100%; text-transform:uppercase; letter-spacing:.08em;"
           @input="location = location.toUpperCase()"
@@ -23,22 +23,22 @@
 
       <!-- SKU / note (optional) -->
       <div class="field-group">
-        <label class="field-label">SKU / Observação <span class="optional">(opcional)</span></label>
-        <input v-model="sku" type="text" placeholder="EX-4521-B" style="width:100%" />
+        <label class="field-label">{{ $t('actionPanel.skuNote') }} <span class="optional">{{ $t('actionPanel.optional') }}</span></label>
+        <input v-model="sku" type="text" :placeholder="$t('actionPanel.skuPlaceholder')" style="width:100%" />
       </div>
 
       <!-- Buttons -->
       <div class="action-btns">
         <button class="btn btn-entry" :disabled="loading" @click="handleEntry">
-          <span>▶ ENTRADA</span>
+          <span>▶ {{ $t('actionPanel.entry') }}</span>
         </button>
         <button class="btn btn-exit" :disabled="loading" @click="handleExit">
-          <span>◀ SAÍDA</span>
+          <span>◀ {{ $t('actionPanel.exit') }}</span>
         </button>
       </div>
 
       <button class="btn-undo" :disabled="!lastAction || loading" @click="handleUndo">
-        ↩ Desfazer última operação
+        ↩ {{ $t('actionPanel.undo') }}
       </button>
 
       <!-- Selected slot info -->
@@ -46,16 +46,16 @@
         <div class="slot-info-header">
           <span class="slot-id">{{ selectedSlot.id }}</span>
           <span class="tag" :class="selectedSlot.status === 'free' ? 'tag-green' : 'tag-red'">
-            {{ selectedSlot.status === 'free' ? 'LIVRE' : 'OCUPADO' }}
+            {{ selectedSlot.status === 'free' ? $t('slot.free') : $t('slot.occupied') }}
           </span>
         </div>
-        <div v-if="selectedSlot.sku" class="slot-meta">SKU: {{ selectedSlot.sku }}</div>
+        <div v-if="selectedSlot.sku" class="slot-meta">{{ $t('slot.sku') }}: {{ selectedSlot.sku }}</div>
         <div v-if="selectedSlot.updatedAt" class="slot-meta">
-          Atualizado: {{ formatDate(selectedSlot.updatedAt) }}
+          {{ $t('slot.updatedAt') }}: {{ formatDate(selectedSlot.updatedAt) }}
         </div>
-        <div v-if="selectedSlot.updatedBy" class="slot-meta">Por: {{ selectedSlot.updatedBy }}</div>
+        <div v-if="selectedSlot.updatedBy" class="slot-meta">{{ $t('slot.updatedBy') }}: {{ selectedSlot.updatedBy }}</div>
         <button class="use-addr-btn" @click="location = selectedSlot!.id">
-          Usar este endereço
+          {{ $t('actionPanel.useThisAddress') }}
         </button>
       </div>
     </div>
@@ -74,6 +74,7 @@ const emit = defineEmits<{ done: [] }>()
 const api = useWarehouseApi()
 const store = useWarehouseStore()
 const { push } = useAlerts()
+const t = useI18n()
 
 const location = ref('')
 const sku = ref('')
@@ -85,10 +86,10 @@ const ADDR_RE = /^[A-F]-(\d{1,2})-(N[123])$/
 
 const validationMsg = computed(() => {
   if (!location.value) return ''
-  if (!ADDR_RE.test(location.value)) return 'Formato inválido — use ex: A-5-N2'
+  if (!ADDR_RE.test(location.value)) return t('actionPanel.addressFormat')
   const slot = store.getSlot(location.value)
-  if (!slot) return 'Posição não encontrada'
-  return slot.status === 'free' ? '✓ Livre — pronta para entrada' : '✓ Ocupada — pronta para saída'
+  if (!slot) return t('actionPanel.addressNotFound')
+  return slot.status === 'free' ? t('actionPanel.slotFree') : t('actionPanel.slotOccupied')
 })
 
 const validationClass = computed(() => {
@@ -117,22 +118,20 @@ async function handleEntry() {
     store.setSlot(updated)
     lastAction.value = { slotId: location.value, type: 'entry' }
     
-    push({ type: 'success', message: `Entrada registrada em ${location.value}${updated.sku ? ` - SKU: ${updated.sku}` : ''}` })
+    push({ type: 'success', message: t('actionPanel.entryRegistered', { address: location.value }) + (updated.sku ? ` - SKU: ${updated.sku}` : '') })
     
     sku.value = ''
     emit('done')
   } catch (e: any) {
     console.log('ACTION PANEL: Erro no entry', e)
-    // Com fetch nativo, o erro agora é o corpo da resposta diretamente
     if (e?.code === 'SLOT_OCCUPIED') {
       console.log('ACTION PANEL: Tratando SLOT_OCCUPIED')
-      // Forçar atualização local imediata
       const existingSlot = store.getSlot(location.value)
       const shouldNotify = !existingSlot || existingSlot.status !== 'occupied'
       
       if (existingSlot && shouldNotify) {
         store.setSlot({ ...existingSlot, status: 'occupied', updatedAt: new Date().toISOString() })
-        push({ type: 'warning', message: `Posição já ocupada: ${location.value}` })
+        push({ type: 'warning', message: t('actionPanel.slotAlreadyOccupied', { address: location.value }) })
       }
       
       // Tentar buscar estado real do servidor
@@ -146,7 +145,7 @@ async function handleEntry() {
         // Manter estado local se falhar busca
       }
     } else {
-      const errorMessage = e?.message || e?.error || 'Erro ao registrar entrada'
+      const errorMessage = e?.message || e?.error || t('errors.generic')
       push({ type: 'danger', message: errorMessage })
     }
   } finally {
@@ -167,7 +166,7 @@ async function handleExit() {
     store.setSlot(updated)
     lastAction.value = { slotId: location.value, type: 'exit' }
     
-    push({ type: 'info', message: `Saída registrada em ${location.value}` })
+    push({ type: 'info', message: t('actionPanel.exitRegistered', { address: location.value }) })
     
     sku.value = ''
     emit('done')
@@ -180,7 +179,7 @@ async function handleExit() {
       
       if (existingSlot && shouldNotify) {
         store.setSlot({ ...existingSlot, status: 'free', updatedAt: new Date().toISOString() })
-        push({ type: 'warning', message: `Posição já livre: ${location.value}` })
+        push({ type: 'warning', message: t('actionPanel.slotAlreadyFree', { address: location.value }) })
       }
       
       // Tentar buscar estado real do servidor
@@ -194,7 +193,7 @@ async function handleExit() {
         // Manter estado local se falhar busca
       }
     } else {
-      const errorMessage = e?.message || e?.error || 'Erro ao registrar saída'
+      const errorMessage = e?.message || e?.error || t('errors.generic')
       push({ type: 'danger', message: errorMessage })
     }
   } finally {
@@ -207,11 +206,11 @@ async function handleUndo() {
   loading.value = true
   try {
     await api.undoLastMovement(lastAction.value.slotId)
-    push({ type: 'info', message: `Operação desfeita: ${lastAction.value.slotId}` })
+    push({ type: 'info', message: t('history.undoSuccess') + ` ${lastAction.value.slotId}` })
     lastAction.value = null
     emit('done')
   } catch (e: any) {
-    push({ type: 'danger', message: 'Não foi possível desfazer' })
+    push({ type: 'danger', message: t('errors.generic') })
   } finally {
     loading.value = false
   }

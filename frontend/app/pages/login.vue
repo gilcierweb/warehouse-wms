@@ -41,7 +41,7 @@
         </div>
         
         <div class="auth-subheader">
-          <h3 class="auth-heading">Sign In</h3>
+          <h3 class="auth-heading">{{ $t('auth.signIn') }}</h3>
           <p class="auth-desc">Warehouse Management System</p>
         </div>
 
@@ -49,12 +49,12 @@
         <form class="auth-form" @submit.prevent="handleLogin">
           <!-- Username -->
           <div class="auth-field">
-            <label class="auth-label" for="userUsername">Username or Email*</label>
+            <label class="auth-label" for="userUsername">{{ $t('auth.usernameOrEmail') }}*</label>
             <input 
               id="userUsername" 
               v-model="username" 
               type="text" 
-              placeholder="Enter your username or email" 
+              :placeholder="$t('auth.usernameOrEmail')" 
               class="auth-input" 
               required 
             />
@@ -62,7 +62,7 @@
 
           <!-- Password -->
           <div class="auth-field">
-            <label class="auth-label" for="userPassword">Password*</label>
+            <label class="auth-label" for="userPassword">{{ $t('auth.password') }}*</label>
             <div class="auth-input-group">
               <input 
                 id="userPassword" 
@@ -93,9 +93,9 @@
           <div class="auth-options">
             <label class="auth-checkbox-label">
               <input type="checkbox" class="auth-checkbox" id="rememberMe" v-model="rememberMe" />
-              <span class="auth-checkbox-text">Remember Me</span>
+              <span class="auth-checkbox-text">{{ $t('auth.rememberMe') }}</span>
             </label>
-            <NuxtLink to="/password_recovery" class="auth-link">Forgot Password?</NuxtLink>
+            <NuxtLink to="/password_recovery" class="auth-link">{{ $t('auth.forgotPassword') }}</NuxtLink>
           </div>
 
           <!-- Error Alert -->
@@ -113,15 +113,15 @@
             :disabled="isLoading"
           >
             <span v-if="isLoading" class="auth-spinner"></span>
-            <span v-else>Sign In to WMS</span>
+            <span v-else>{{ $t('auth.signInToWms') }}</span>
           </button>
         </form>
 
         <!-- Register Link -->
         <p class="auth-footer-text">
-          New on our platform?
+          {{ $t('auth.newOnPlatform') }}
           <NuxtLink to="/register" class="auth-link">
-            Create an account
+            {{ $t('auth.createAccount') }}
           </NuxtLink>
         </p>
 
@@ -131,13 +131,13 @@
             <svg class="auth-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
-            <span>Easy Setup</span>
+            <span>{{ $t('auth.easySetup') }}</span>
           </div>
           <div class="auth-feature">
             <svg class="auth-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            <span>Secure</span>
+            <span>{{ $t('auth.secure') }}</span>
           </div>
         </div>
       </div>
@@ -154,6 +154,7 @@ definePageMeta({
 
 const { login, initAuth } = useAuth()
 const { push } = useAlerts()
+const t = useI18n()
 
 const username = ref('')
 const password = ref('')
@@ -178,7 +179,7 @@ const handleLogin = async () => {
       await navigateTo('/')
     }
   } catch (err: any) {
-    error.value = err?.data?.message || err?.message || 'Invalid credentials'
+    error.value = err?.data?.message || err?.message || t('auth.invalidCredentials')
     push({ type: 'danger', message: error.value })
   } finally {
     isLoading.value = false

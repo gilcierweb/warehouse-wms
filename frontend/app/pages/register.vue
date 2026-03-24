@@ -41,7 +41,7 @@
         </div>
         
         <div class="auth-subheader">
-          <h3 class="auth-heading">Create Account</h3>
+          <h3 class="auth-heading">{{ $t('auth.createAccount') }}</h3>
           <p class="auth-desc">Warehouse Management System</p>
         </div>
 
@@ -49,12 +49,12 @@
         <form class="auth-form" @submit.prevent="handleRegister">
           <!-- Username -->
           <div class="auth-field">
-            <label class="auth-label" for="regUsername">Username*</label>
+            <label class="auth-label" for="regUsername">{{ $t('auth.username') }}*</label>
             <input 
               id="regUsername" 
               v-model="username" 
               type="text" 
-              placeholder="Enter your username" 
+              :placeholder="$t('auth.username')" 
               class="auth-input" 
               required 
             />
@@ -62,12 +62,12 @@
 
           <!-- Email -->
           <div class="auth-field">
-            <label class="auth-label" for="regEmail">Email*</label>
+            <label class="auth-label" for="regEmail">{{ $t('auth.email') }}*</label>
             <input 
               id="regEmail" 
               v-model="email" 
               type="email" 
-              placeholder="Enter your email" 
+              :placeholder="$t('auth.email')" 
               class="auth-input" 
               required 
             />
@@ -75,13 +75,13 @@
 
           <!-- Password -->
           <div class="auth-field">
-            <label class="auth-label" for="regPassword">Password*</label>
+            <label class="auth-label" for="regPassword">{{ $t('auth.password') }}*</label>
             <div class="auth-input-group">
               <input 
                 id="regPassword" 
                 v-model="password" 
                 :type="showPassword ? 'text' : 'password'" 
-                placeholder="Min 8 characters" 
+                :placeholder="$t('auth.passwordMinLength')" 
                 required 
                 minlength="8"
                 class="auth-input-password"
@@ -105,11 +105,11 @@
 
           <!-- Account Type -->
           <div class="auth-field">
-            <label class="auth-label" for="regRole">Account Type</label>
+            <label class="auth-label" for="regRole">{{ $t('auth.accountType') }}</label>
             <select id="regRole" v-model="role" class="auth-select">
-              <option :value="2">Operator (Standard)</option>
-              <option :value="1">Administrator</option>
-              <option :value="3">Viewer (Read-only)</option>
+              <option :value="2">{{ $t('auth.operatorRole') }}</option>
+              <option :value="1">{{ $t('auth.adminRole') }}</option>
+              <option :value="3">{{ $t('auth.viewerRole') }}</option>
             </select>
           </div>
 
@@ -134,13 +134,13 @@
 
         <!-- Login Link -->
         <p class="auth-footer-text">
-          Already have an account?
+          {{ $t('auth.alreadyHaveAccount') }}
           <NuxtLink to="/login" class="auth-link">
-            Sign in
+            {{ $t('auth.signIn') }}
           </NuxtLink>
         </p>
 
-        <div class="auth-divider">or</div>
+        <div class="auth-divider">{{ $t('auth.or') }}</div>
 
         <!-- Features -->
         <div class="auth-features">
@@ -148,13 +148,13 @@
             <svg class="auth-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
-            <span>Easy Setup</span>
+            <span>{{ $t('auth.easySetup') }}</span>
           </div>
           <div class="auth-feature">
             <svg class="auth-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            <span>Secure</span>
+            <span>{{ $t('auth.secure') }}</span>
           </div>
         </div>
       </div>
@@ -171,6 +171,7 @@ definePageMeta({
 
 const { register } = useAuth()
 const { push } = useAlerts()
+const t = useI18n()
 
 const username = ref('')
 const email = ref('')
@@ -186,10 +187,10 @@ const handleRegister = async () => {
   
   try {
     await register(username.value, email.value, password.value, role.value)
-    push({ type: 'success', message: 'Account created! Please login.' })
+    push({ type: 'success', message: t('auth.accountCreated') })
     await navigateTo('/login')
   } catch (err: any) {
-    error.value = err?.data?.message || err?.message || 'Registration failed'
+    error.value = err?.data?.message || err?.message || t('errors.generic')
     push({ type: 'danger', message: error.value })
   } finally {
     isLoading.value = false

@@ -162,6 +162,9 @@ yarn preview
 
 # bun
 bun run preview
+
+npx nuxi@latest module add i18n
+
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.

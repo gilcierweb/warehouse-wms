@@ -4,27 +4,27 @@
     <!-- Top bar -->
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="page-title">MAPA DE OCUPAÇÃO</h1>
+        <h1 class="page-title">{{ $t('map.title') }}</h1>
         <div class="global-stats">
           <span class="stat-chip">
             <span class="chip-dot chip-dot--red" />
-            {{ globalStats.occupied }} ocupados
+            {{ globalStats.occupied }} {{ $t('map.occupied') }}
           </span>
           <span class="stat-chip">
             <span class="chip-dot chip-dot--green" />
-            {{ globalStats.free }} livres
+            {{ globalStats.free }} {{ $t('map.free') }}
           </span>
           <span class="stat-chip stat-chip--pct" :class="globalPctClass">
-            {{ globalStats.pct.toFixed(1) }}% total
+            {{ globalStats.pct.toFixed(1) }}% {{ $t('map.total') }}
           </span>
         </div>
       </div>
 
       <div class="topbar-right">
         <!-- Search / filter -->
-        <input v-model="search" type="text" placeholder="Buscar endereço ou SKU..." style="width:220px" />
-        <button class="icon-btn" title="Exportar Excel" @click="api.downloadExcel()">↓ EXCEL</button>
-        <button class="icon-btn icon-btn--blue" title="Exportar PDF" @click="api.downloadPdf()">↓ PDF</button>
+        <input v-model="search" type="text" :placeholder="$t('map.search')" style="width:220px" />
+        <button class="icon-btn" :title="$t('map.exportExcel')" @click="api.downloadExcel()">↓ EXCEL</button>
+        <button class="icon-btn icon-btn--blue" :title="$t('map.exportPdf')" @click="api.downloadPdf()">↓ PDF</button>
       </div>
     </header>
 
@@ -32,7 +32,7 @@
     <Transition name="banner">
       <div v-if="showCapacityAlert" class="alert-banner">
         <span class="alert-banner-icon">⚠</span>
-        <span>Atenção! O armazém atingiu <strong>{{ globalStats.pct.toFixed(1) }}%</strong> de ocupação — risco de congestionamento operacional.</span>
+        <span>{{ $t('map.capacityAlert', { pct: globalStats.pct.toFixed(1) }) }}</span>
         <button class="banner-close" @click="showCapacityAlert = false">✕</button>
       </div>
     </Transition>
@@ -73,7 +73,7 @@
 
         <!-- Quick stats per street -->
         <div class="street-summary">
-          <div class="summary-title">RESUMO POR RUA</div>
+          <div class="summary-title">{{ $t('map.streetSummary') }}</div>
           <div v-for="s in streets" :key="s.name" class="summary-row">
             <span class="summary-name">{{ s.name }}</span>
             <div class="summary-bar-wrap">
@@ -94,13 +94,13 @@
         <!-- Legend -->
         <div class="legend">
           <div class="legend-item">
-            <span class="legend-swatch swatch-free" /> Livre
+            <span class="legend-swatch swatch-free" /> {{ $t('map.legendFree') }}
           </div>
           <div class="legend-item">
-            <span class="legend-swatch swatch-occupied" /> Ocupado
+            <span class="legend-swatch swatch-occupied" /> {{ $t('map.legendOccupied') }}
           </div>
           <div class="legend-item">
-            <span class="legend-swatch swatch-selected" /> Selecionado
+            <span class="legend-swatch swatch-selected" /> {{ $t('map.legendSelected') }}
           </div>
         </div>
       </aside>
@@ -120,6 +120,7 @@ definePageMeta({
 const api = useWarehouseApi()
 const store = useWarehouseStore()
 const { push } = useAlerts()
+const t = useI18n()
 
 const { streets, globalStats, bulkLoad } = store
 const search = ref('')
@@ -147,7 +148,7 @@ watch(() => globalStats.value.pct, (pct) => {
 
 function onSelectSlot(slot: Slot) {
   if (slot.status === 'occupied') {
-    push({ type: 'warning', message: `Posição ${slot.id} já está em uso${slot.sku ? ` - SKU: ${slot.sku}` : ''}` })
+    push({ type: 'warning', message: t('errors.slotOccupied') + ` ${slot.id}${slot.sku ? ` - SKU: ${slot.sku}` : ''}` })
   }
   selectedSlot.value = slot
 }
@@ -162,7 +163,7 @@ onMounted(async () => {
     const ws = useWarehouseWS()
     ws.connect()
   } catch {
-    push({ type: 'warning', message: 'API offline — usando dados locais de demonstração' })
+    push({ type: 'warning', message: t('errors.apiOffline') })
   }
 })
 
