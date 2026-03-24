@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate rust_i18n;
+
 use actix_cors::Cors;
 use actix_web::{App, HttpResponse, HttpServer, Responder, Result, http::header, get, web};
 use serde::Serialize;
@@ -5,6 +8,8 @@ use std::env;
 use std::string::String;
 
 use crate::config::AppConfig;
+
+i18n!("locales");
 
 // Import modules is required for use crate::mymod::
 mod config;

@@ -6,12 +6,13 @@ use crate::{
 use actix_web::{web, HttpResponse, Error, get};
 use chrono::Utc;
 use diesel::prelude::*;
+use rust_i18n::t;
 
 // ── GET /api/export/excel ─────────────────────────────────────
 
 #[get("/export/excel")]
 pub async fn export_excel(db: web::Data<Database>) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| actix_web::error::ErrorInternalServerError("Database connection error"))?;
+    let mut conn = db.pool.get().map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.connection_error").to_string()))?;
 
     let Ok((all_slots, all_movements)) = web::block(move || -> Result<_, diesel::result::Error> {
         let s: Vec<Slot> = slots::table
@@ -28,8 +29,8 @@ pub async fn export_excel(db: web::Data<Database>) -> Result<HttpResponse, Error
         Ok((s, m))
     })
     .await
-    .map_err(|_| actix_web::error::ErrorInternalServerError("Database error"))? else {
-        return Err(actix_web::error::ErrorInternalServerError("Database error"));
+    .map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.error").to_string()))? else {
+        return Err(actix_web::error::ErrorInternalServerError(t!("database.error").to_string()));
     };
 
     // Criar CSV simples como fallback
@@ -47,10 +48,9 @@ pub async fn export_excel(db: web::Data<Database>) -> Result<HttpResponse, Error
 fn build_csv(slot_data: &[Slot], mov_data: &[Movement]) -> String {
     let mut csv = String::new();
     
-    // Header slots
-    csv.push_str("TIPO,DADOS\n");
-    csv.push_str("SLOTS,\n");
-    csv.push_str("Endereço,Rua,Lane,Posição,Status,SKU,Atualizado em\n");
+    csv.push_str(&format!("{}\n", t!("export.csv.type")));
+    csv.push_str(&format!("{}\n", t!("export.csv.slots_title")));
+    csv.push_str(&format!("{}\n", t!("export.csv.slots_header")));
     
     for slot in slot_data {
         csv.push_str(&format!("{},{},{},{},{},{},{}\n",
@@ -64,9 +64,8 @@ fn build_csv(slot_data: &[Slot], mov_data: &[Movement]) -> String {
         ));
     }
     
-    // Header movements
-    csv.push_str("MOVEMENTS,\n");
-    csv.push_str("ID,Endereço,Tipo,Operador,SKU,Data/Hora,Obs.\n");
+    csv.push_str(&format!("{}\n", t!("export.csv.movements_title")));
+    csv.push_str(&format!("{}\n", t!("export.csv.movements_header")));
     
     for mov in mov_data {
         csv.push_str(&format!("{},{},{},{},{},{},{}\n",

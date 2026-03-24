@@ -13,6 +13,7 @@ use chrono::Utc;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use rust_i18n::t;
 
 // ── DTOs ─────────────────────────────────────────────────────
 
@@ -169,7 +170,7 @@ pub async fn register(
     .map_err(|e| match e {
         diesel::result::Error::DatabaseError(
             diesel::result::DatabaseErrorKind::UniqueViolation, _
-        ) => AppError::Conflict("Username or email already exists".to_string()),
+        ) => AppError::Conflict(t!("auth.register.username_exists").to_string()),
         other => AppError::Database(other),
     })?;
 
@@ -237,7 +238,7 @@ pub async fn recover_password(
     }
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
-        "message": "If the email exists, a recovery link has been sent",
+        "message": t!("auth.recover.email_sent").to_string(),
         "token": response_token
     })))
 }
@@ -263,7 +264,7 @@ pub async fn reset_password(
     .await
     .map_err(|e| AppError::Internal(e.to_string()))?
     .map_err(AppError::Database)?
-    .ok_or(AppError::BadRequest("Invalid or expired token".to_string()))?;
+    .ok_or(AppError::BadRequest(t!("auth.reset.token_invalid").to_string()))?;
 
     let encrypted_password = password_hash(new_password);
     let now = Utc::now().naive_utc();
@@ -285,6 +286,6 @@ pub async fn reset_password(
     println!("DEBUG: Password reset successful for user: {}", user.username);
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
-        "message": "Password updated successfully"
+        "message": t!("auth.reset.success").to_string()
     })))
 }

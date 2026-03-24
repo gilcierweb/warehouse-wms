@@ -5,38 +5,44 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum AppError {
-    #[error("Recurso não encontrado: {0}")]
+    #[error("{0}")]
     NotFound(String),
 
-    #[error("Requisição inválida: {0}")]
+    #[error("{0}")]
     BadRequest(String),
 
-    #[error("Não autorizado")]
+    #[error("Unauthorized")]
     Unauthorized,
 
-    #[error("Proibido: {0}")]
+    #[error("{0}")]
     Forbidden(String),
 
-    #[error("Conflito: {0}")]
+    #[error("{0}")]
     Conflict(String),
 
-    #[error("Erro de banco de dados: {0}")]
+    #[error("{0}")]
     Database(#[from] DieselError),
 
-    #[error("Erro interno: {0}")]
+    #[error("{0}")]
     Internal(String),
 }
 
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         let (status, code) = match self {
-            AppError::NotFound(_)    => (actix_web::http::StatusCode::NOT_FOUND,            "NOT_FOUND"),
-            AppError::BadRequest(_)  => (actix_web::http::StatusCode::BAD_REQUEST,          "BAD_REQUEST"),
-            AppError::Unauthorized   => (actix_web::http::StatusCode::UNAUTHORIZED,         "UNAUTHORIZED"),
-            AppError::Forbidden(_)   => (actix_web::http::StatusCode::FORBIDDEN,            "FORBIDDEN"),
-            AppError::Conflict(_)    => (actix_web::http::StatusCode::CONFLICT,             "CONFLICT"),
-            AppError::Database(_)    => (actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,"DB_ERROR"),
-            AppError::Internal(_)    => (actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,"INTERNAL_ERROR"),
+            AppError::NotFound(_) => (actix_web::http::StatusCode::NOT_FOUND, "NOT_FOUND"),
+            AppError::BadRequest(_) => (actix_web::http::StatusCode::BAD_REQUEST, "BAD_REQUEST"),
+            AppError::Unauthorized => (actix_web::http::StatusCode::UNAUTHORIZED, "UNAUTHORIZED"),
+            AppError::Forbidden(_) => (actix_web::http::StatusCode::FORBIDDEN, "FORBIDDEN"),
+            AppError::Conflict(_) => (actix_web::http::StatusCode::CONFLICT, "CONFLICT"),
+            AppError::Database(_) => (
+                actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "DB_ERROR",
+            ),
+            AppError::Internal(_) => (
+                actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL_ERROR",
+            ),
         };
 
         HttpResponse::build(status).json(json!({

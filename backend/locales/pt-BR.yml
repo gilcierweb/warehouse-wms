@@ -1,0 +1,111 @@
+_version: 1
+
+# Errors
+errors:
+  not_found: "Recurso não encontrado: %{message}"
+  bad_request: "Requisição inválida: %{message}"
+  unauthorized: "Não autorizado"
+  forbidden: "Proibido: %{message}"
+  conflict: "Conflito: %{message}"
+  database: "Erro de banco de dados: %{message}"
+  internal: "Erro interno: %{message}"
+
+# Auth
+auth:
+  login:
+    title: "Login"
+    success: "Login realizado com sucesso"
+    failed: "Usuário ou senha inválidos"
+    user_not_found: "Usuário não encontrado: %{username}"
+  register:
+    title: "Cadastro"
+    success: "Usuário cadastrado com sucesso"
+    username_exists: "Nome de usuário ou e-mail já existe"
+  recover:
+    title: "Recuperação de Senha"
+    email_sent: "Se o e-mail existir, um link de recuperação foi enviado"
+  reset:
+    title: "Redefinição de Senha"
+    token_invalid: "Token inválido ou expirado"
+    success: "Senha atualizada com sucesso"
+  me:
+    title: "Usuário Atual"
+
+# Slots
+slots:
+  list:
+    title: "Listar Vagas"
+  get:
+    title: "Obter Vaga"
+    not_found: "Vaga '%{address}' não encontrada"
+  entry:
+    title: "Entrada"
+    success: "Entrada registrada com sucesso"
+    slot_not_found: "Vaga não encontrada"
+    slot_occupied: "Vaga não encontrada ou já ocupada"
+    slot_not_free: "Vaga não está livre"
+  exit:
+    title: "Saída"
+    success: "Saída registrada com sucesso"
+    slot_not_occupied: "Vaga não está ocupada"
+  stats:
+    title: "Estatísticas"
+    total_slots: "Total de Vagas"
+    occupied: "Ocupadas"
+    free: "Livres"
+
+# Movements
+movements:
+  list:
+    title: "Listar Movimentos"
+    filtered: "Movimentos Filtrados"
+  undo:
+    title: "Desfazer Movimento"
+    success: "Movimento desfeito com sucesso"
+    not_found: "Nenhum movimento encontrado para desfazer"
+    error: "Erro ao desfazer movimento"
+  create:
+    title: "Criar Movimento"
+    success: "Movimento criado com sucesso"
+  get:
+    title: "Obter Movimento"
+
+# Export
+export:
+  title: "Exportar"
+  csv:
+    filename: "wms_relatorio_%{date}.csv"
+    type: "TIPO"
+    data: "DADOS"
+    slots_title: "VAGAS"
+    slots_header: "Endereço,Rua,Lane,Posição,Status,SKU,Atualizado em"
+    movements_title: "MOVIMENTOS"
+    movements_header: "ID,Endereço,Tipo,Operador,SKU,Data/Hora,Obs."
+
+# Database
+database:
+  connection_error: "Erro de conexão com o banco de dados"
+  error: "Erro no banco de dados"
+  query_error: "Erro na consulta ao banco de dados"
+  transaction_error: "Erro na transação do banco de dados"
+
+# Common
+common:
+  id: "ID"
+  username: "Nome de usuário"
+  email: "E-mail"
+  role: "Função"
+  status: "Status"
+  created_at: "Criado em"
+  updated_at: "Atualizado em"
+  address: "Endereço"
+  street: "Rua"
+  lane: "Rua"
+  position: "Posição"
+  sku: "SKU"
+  operator: "Operador"
+  operator_name: "Nome do Operador"
+  type: "Tipo"
+  note: "Observação"
+  entry: "Entrada"
+  exit: "Saída"

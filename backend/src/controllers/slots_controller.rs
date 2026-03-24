@@ -2,6 +2,7 @@ use actix_web::{get, post, web, HttpResponse, Error, error::{ErrorInternalServer
 use chrono::Utc;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use rust_i18n::t;
 
 use crate::db::database::Database;
 use crate::db::schema::{movements, slots};
@@ -37,7 +38,7 @@ pub async fn list_slots(
     db: web::Data<Database>,
     filter: web::Query<SlotFilter>,
 ) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError("Database connection error"))?;
+    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
 
     let result = web::block(move || {
         let mut query = slots::table.into_boxed();
@@ -54,9 +55,9 @@ pub async fn list_slots(
             .load::<Slot>(&mut conn)
     })
     .await
-    .map_err(|_| ErrorInternalServerError("Database error"))?;
+    .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
 
-    let slots = result.map_err(|_| ErrorInternalServerError("Database query error"))?;
+    let slots = result.map_err(|_| ErrorInternalServerError(t!("database.query_error")))?;
     Ok(HttpResponse::Ok().json(slots))
 }
 
@@ -66,7 +67,7 @@ pub async fn get_slot(
     db: web::Data<Database>,
     address: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError("Database connection error"))?;
+    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
     let addr = address.into_inner().to_uppercase();
     let addr_clone = addr.clone();
 
@@ -77,12 +78,12 @@ pub async fn get_slot(
             .optional()
     })
     .await
-    .map_err(|_| ErrorInternalServerError("Database error"))?;
+    .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
 
     let slot = result.map_err(|_| ErrorInternalServerError("Database query error"))?;
     match slot {
         Some(s) => Ok(HttpResponse::Ok().json(s)),
-        None => Ok(HttpResponse::NotFound().body(format!("Slot '{}' não encontrado", addr_clone))),
+        None => Ok(HttpResponse::NotFound().body(t!("slots.get.not_found", address = addr_clone).to_string())),
     }
 }
 
@@ -94,7 +95,7 @@ pub async fn entry(
     address: web::Path<String>,
     body: web::Json<EntryRequest>,
 ) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError("Database connection error"))?;
+    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
     let addr = address.into_inner().to_uppercase();
     
     // TODO: Add authentication when middleware is implemented
@@ -148,17 +149,17 @@ pub async fn entry(
         Ok(updated)
     })
     .await
-    .map_err(|_| ErrorInternalServerError("Database error"))?;
+    .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
     
     // Retorna resposta JSON simples
     let updated = result.map_err(|e| {
         match e {
             diesel::result::Error::NotFound => ErrorNotFound(serde_json::json!({
-                "error": "Slot not found or already occupied",
+                "error": t!("slots.entry.slot_occupied").to_string(),
                 "code": "SLOT_OCCUPIED"
             })),
             _ => ErrorInternalServerError(serde_json::json!({
-                "error": "Database error",
+                "error": t!("database.error").to_string(),
                 "code": "DATABASE_ERROR"
             }))
         }
@@ -180,7 +181,7 @@ pub async fn exit(
     address: web::Path<String>,
     body:    web::Json<ExitRequest>,
 ) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError("Database connection error"))?;
+    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
     let addr = address.into_inner().to_uppercase();
     
     // TODO: Add authentication when middleware is implemented
@@ -222,9 +223,9 @@ pub async fn exit(
         Ok(updated)
     })
     .await
-    .map_err(|_| ErrorInternalServerError("Database error"))?;
+    .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
 
-    let updated = result.map_err(|_| ErrorInternalServerError("Database transaction error"))?;
+    let updated = result.map_err(|_| ErrorInternalServerError(t!("database.transaction_error")))?;
     
     // Envia evento WebSocket
     let ws_event = WsEvent::slot_exit(&updated);
@@ -237,13 +238,13 @@ pub async fn exit(
 /// GET /api/stats
 #[get("/stats")]
 pub async fn get_stats(db: web::Data<Database>) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError("Database connection error"))?;
+    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
 
     let result = web::block(move || -> Result<_, diesel::result::Error> {
         compute_stats(&mut conn)
     })
     .await
-    .map_err(|_| ErrorInternalServerError("Database error"))?;
+    .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
 
     let stats = result.map_err(|_| ErrorInternalServerError("Database query error"))?;
     Ok(HttpResponse::Ok().json(stats))

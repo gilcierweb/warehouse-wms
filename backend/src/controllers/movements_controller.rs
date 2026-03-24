@@ -4,6 +4,7 @@ use diesel::prelude::*;
 use serde::Deserialize;
 use serde_json;
 use uuid::Uuid;
+use rust_i18n::t;
 
 use crate::db::database::Database;
 use crate::db::schema::{movements, slots};
@@ -51,7 +52,7 @@ pub async fn list_movements(
     db: web::Data<Database>,
     filter: web::Query<MovementFilter>,
 ) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| actix_web::error::ErrorInternalServerError("Database connection error"))?;
+    let mut conn = db.pool.get().map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.connection_error").to_string()))?;
     let limit = filter.limit.unwrap_or(50).min(200);
     let offset = filter.offset.unwrap_or(0);
     let slot_address = filter.slot_address.clone();
@@ -93,9 +94,9 @@ pub async fn list_movements(
             .load::<Movement>(&mut conn)
     })
     .await
-    .map_err(|_| actix_web::error::ErrorInternalServerError("Database error"))?;
+    .map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.error").to_string()))?;
 
-    let movements = result.map_err(|_| actix_web::error::ErrorInternalServerError("Database query error"))?;
+    let movements = result.map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.query_error").to_string()))?;
     Ok(HttpResponse::Ok().json(movements))
 }
 
@@ -155,11 +156,11 @@ pub async fn undo_movement(
         })
     })
     .await
-    .map_err(|_| actix_web::error::ErrorInternalServerError("Database error"))?;
+    .map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.error").to_string()))?;
 
     match updated_slot {
         Ok(slot) => Ok(HttpResponse::Ok().json(&slot)),
-        Err(_) => Ok(HttpResponse::NotFound().body("No movement found to undo")),
+        Err(_) => Ok(HttpResponse::NotFound().body(t!("movements.undo.not_found").to_string())),
     }
 }
 
@@ -180,7 +181,7 @@ pub async fn get_movement_by_id(db: web::Data<Database>, id: web::Path<Uuid>) ->
 
     match movement {
         Some(movement) => HttpResponse::Ok().json(movement),
-        None => HttpResponse::NotFound().body("Movement not found"),
+        None => HttpResponse::NotFound().body(t!("movements.get.not_found").to_string()),
     }
 }
 
@@ -194,7 +195,7 @@ pub async fn update_movement_by_id(
 
     match movement {
         Some(movement) => HttpResponse::Ok().json(movement),
-        None => HttpResponse::NotFound().body("Movement not found"),
+        None => HttpResponse::NotFound().body(t!("movements.get.not_found").to_string()),
     }
 }
 
@@ -204,6 +205,6 @@ pub async fn delete_movement_by_id(db: web::Data<Database>, id: web::Path<Uuid>)
 
     match movement {
         Some(_) => HttpResponse::Ok().finish(),
-        None => HttpResponse::NotFound().body("Movement not found"),
+        None => HttpResponse::NotFound().body(t!("movements.get.not_found").to_string()),
     }
 }

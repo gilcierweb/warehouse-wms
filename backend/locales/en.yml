@@ -1,0 +1,111 @@
+_version: 1
+
+# Errors
+errors:
+  not_found: "Resource not found: %{message}"
+  bad_request: "Invalid request: %{message}"
+  unauthorized: "Unauthorized"
+  forbidden: "Forbidden: %{message}"
+  conflict: "Conflict: %{message}"
+  database: "Database error: %{message}"
+  internal: "Internal error: %{message}"
+
+# Auth
+auth:
+  login:
+    title: "Login"
+    success: "Login successful"
+    failed: "Invalid username or password"
+    user_not_found: "User not found: %{username}"
+  register:
+    title: "Register"
+    success: "User registered successfully"
+    username_exists: "Username or email already exists"
+  recover:
+    title: "Password Recovery"
+    email_sent: "If the email exists, a recovery link has been sent"
+  reset:
+    title: "Reset Password"
+    token_invalid: "Invalid or expired token"
+    success: "Password updated successfully"
+  me:
+    title: "Current User"
+
+# Slots
+slots:
+  list:
+    title: "List Slots"
+  get:
+    title: "Get Slot"
+    not_found: "Slot '%{address}' not found"
+  entry:
+    title: "Entry"
+    success: "Entry registered successfully"
+    slot_not_found: "Slot not found"
+    slot_occupied: "Slot not found or already occupied"
+    slot_not_free: "Slot is not free"
+  exit:
+    title: "Exit"
+    success: "Exit registered successfully"
+    slot_not_occupied: "Slot is not occupied"
+  stats:
+    title: "Statistics"
+    total_slots: "Total Slots"
+    occupied: "Occupied"
+    free: "Free"
+
+# Movements
+movements:
+  list:
+    title: "List Movements"
+    filtered: "Filtered Movements"
+  undo:
+    title: "Undo Movement"
+    success: "Movement undone successfully"
+    not_found: "No movement found to undo"
+    error: "Error undoing movement"
+  create:
+    title: "Create Movement"
+    success: "Movement created successfully"
+  get:
+    title: "Get Movement"
+
+# Export
+export:
+  title: "Export"
+  csv:
+    filename: "wms_report_%{date}.csv"
+    type: "TYPE"
+    data: "DATA"
+    slots_title: "SLOTS"
+    slots_header: "Address,Street,Lane,Position,Status,SKU,Updated at"
+    movements_title: "MOVEMENTS"
+    movements_header: "ID,Address,Type,Operator,SKU,Date/Time,Notes"
+
+# Database
+database:
+  connection_error: "Database connection error"
+  error: "Database error"
+  query_error: "Database query error"
+  transaction_error: "Database transaction error"
+
+# Common
+common:
+  id: "ID"
+  username: "Username"
+  email: "Email"
+  role: "Role"
+  status: "Status"
+  created_at: "Created at"
+  updated_at: "Updated at"
+  address: "Address"
+  street: "Street"
+  lane: "Lane"
+  position: "Position"
+  sku: "SKU"
+  operator: "Operator"
+  operator_name: "Operator Name"
+  type: "Type"
+  note: "Notes"
+  entry: "Entry"
+  exit: "Exit"
