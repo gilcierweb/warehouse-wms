@@ -1,4 +1,4 @@
-# Warehouse WMS — Warehouse Management System
+# Warehouse WMS - Warehouse Management System
 
 Complete Warehouse Management System (WMS) with Rust backend (Actix-Web) and Nuxt.js frontend. Slot management, entry/exit operations, Excel reports, and WebSocket for real-time updates.
 
