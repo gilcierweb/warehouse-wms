@@ -148,7 +148,9 @@
     "yes": "Yes",
     "no": "No",
     "actions": "Actions",
-    "noData": "No data"
+    "noData": "No data",
+    "previous": "Previous",
+    "next": "Next"
   },
   "errors": {
     "generic": "An error occurred",
@@ -162,5 +164,39 @@
     "required": "Required field",
     "invalidEmail": "Invalid email",
     "minLength": "Minimum {min} characters"
+  },
+  "header": {
+    "brandTitle": "WMS",
+    "brandSubtitle": "Warehouse Management",
+    "refreshData": "Refresh data",
+    "logout": "Logout"
+  },
+  "footer": {
+    "systemName": "WMS - Warehouse Management System",
+    "version": "v1.0.0",
+    "slots": "Slots",
+    "rate": "Rate",
+    "status": "Status",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "lastUpdate": "Last update",
+    "justNow": "Just now",
+    "minutes": "min",
+    "hours": "h",
+    "refresh": "Refresh",
+    "info": "System Information",
+    "system": "System",
+    "wmsSystem": "WMS Warehouse Management",
+    "api": "API",
+    "websocket": "WebSocket",
+    "totalSlots": "Total Slots",
+    "occupancy": "Occupancy",
+    "dataUpdated": "Data updated",
+    "updateFailed": "Update failed"
+  },
+  "slotGrid": {
+    "street": "STREET",
+    "occupied": "C",
+    "free": "V"
   }
 }

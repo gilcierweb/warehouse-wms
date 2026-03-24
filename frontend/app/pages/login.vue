@@ -154,7 +154,7 @@ definePageMeta({
 
 const { login, initAuth } = useAuth()
 const { push } = useAlerts()
-const t = useI18n()
+const { t } = useI18n()
 
 const username = ref('')
 const password = ref('')

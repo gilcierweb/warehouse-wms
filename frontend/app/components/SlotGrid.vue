@@ -2,11 +2,11 @@
   <div class="street-block" :class="{ 'street-block--danger': street.pct >= 80, 'street-block--warn': street.pct >= 50 && street.pct < 80 }">
     <!-- Header -->
     <div class="street-header">
-      <div class="street-name">RUA {{ street.name }}</div>
+      <div class="street-name">{{ $t('slotGrid.street') }} {{ street.name }}</div>
       <div class="street-stats">
-        <span class="stat-item stat-occupied">C:{{ street.occupied }}</span>
+        <span class="stat-item stat-occupied">{{ $t('slotGrid.occupied') }}:{{ street.occupied }}</span>
         <span class="stat-divider">|</span>
-        <span class="stat-item stat-free">V:{{ street.free }}</span>
+        <span class="stat-item stat-free">{{ $t('slotGrid.free') }}:{{ street.free }}</span>
         <span class="stat-divider">|</span>
         <span class="stat-pct" :class="pctClass">{{ street.pct.toFixed(1) }}%</span>
       </div>

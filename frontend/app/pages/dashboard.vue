@@ -1,20 +1,20 @@
 <template>
   <div class="dashboard-page">
     <header class="page-header">
-      <h1 class="page-title">DASHBOARD</h1>
-      <span class="last-updated">Atualizado: {{ now }}</span>
+      <h1 class="page-title">{{ $t('dashboard.title') }}</h1>
+      <span class="last-updated">{{ $t('slot.updatedAt') }}: {{ now }}</span>
     </header>
 
     <div class="dash-body">
       <!-- KPI row -->
       <div class="kpi-row">
         <div class="kpi-card">
-          <div class="kpi-label">OCUPAÇÃO GERAL</div>
+          <div class="kpi-label">{{ $t('dashboard.occupancyRate') }}</div>
           <div class="kpi-value" :class="globalPctClass">{{ globalStats.pct.toFixed(1) }}%</div>
           <div class="kpi-sub">{{ globalStats.occupied }} / {{ globalStats.total }} posições</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">POSIÇÕES LIVRES</div>
+          <div class="kpi-label">{{ $t('dashboard.freeSlots') }}</div>
           <div class="kpi-value kpi-green">{{ globalStats.free }}</div>
           <div class="kpi-sub">disponíveis agora</div>
         </div>
@@ -32,7 +32,7 @@
 
       <!-- Bar chart -->
       <div class="chart-card">
-        <div class="chart-title">OCUPAÇÃO POR RUA</div>
+        <div class="chart-title">{{ $t('dashboard.overview') }}</div>
         <div class="bar-chart">
           <div v-for="s in streets" :key="s.name" class="bar-item">
             <div class="bar-wrap">
@@ -52,7 +52,7 @@
 
       <!-- Street detail table -->
       <div class="table-card">
-        <div class="chart-title">DETALHE POR RUA</div>
+        <div class="chart-title">{{ $t('dashboard.overview') }}</div>
         <table class="detail-table">
           <thead>
             <tr>
@@ -105,6 +105,7 @@ definePageMeta({
 
 const store = useWarehouseStore()
 const { streets, globalStats } = store
+const { t } = useI18n()
 
 const now = computed(() =>
   new Intl.DateTimeFormat('pt-BR', { timeStyle: 'medium' }).format(new Date())

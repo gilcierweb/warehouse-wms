@@ -1,7 +1,7 @@
 <template>
   <div class="history-page">
     <header class="page-header">
-      <h1 class="page-title">HISTÓRICO DE MOVIMENTOS</h1>
+      <h1 class="page-title">{{ $t('history.title') }}</h1>
       <div class="header-actions">
         <button class="icon-btn" @click="api.downloadExcel()">↓ EXCEL</button>
       </div>
@@ -9,16 +9,16 @@
 
     <!-- Filters -->
     <div class="filters">
-      <input v-model="filters.slotId" type="text" placeholder="Filtrar por endereço..." style="width:160px;text-transform:uppercase" @input="filters.slotId = filters.slotId.toUpperCase()" />
+      <input v-model="filters.slotId" type="text" :placeholder="$t('history.slot')" style="width:160px;text-transform:uppercase" @input="filters.slotId = filters.slotId.toUpperCase()" />
       <select v-model="filters.type">
-        <option value="">Todos os tipos</option>
-        <option value="entry">Entrada</option>
-        <option value="exit">Saída</option>
+        <option value="">{{ $t('history.typeAll') }}</option>
+        <option value="entry">{{ $t('history.typeEntry') }}</option>
+        <option value="exit">{{ $t('history.typeExit') }}</option>
       </select>
       <input v-model="filters.from" type="date" />
       <input v-model="filters.to"   type="date" />
-      <button class="icon-btn" @click="loadMovements">Filtrar</button>
-      <button class="icon-btn" @click="resetFilters">Limpar</button>
+      <button class="icon-btn" @click="loadMovements">{{ $t('common.filter') }}</button>
+      <button class="icon-btn" @click="resetFilters">{{ $t('common.clear') }}</button>
     </div>
 
     <!-- Table -->
@@ -26,26 +26,26 @@
       <table class="movements-table">
         <thead>
           <tr>
-            <th>Endereço</th>
-            <th>Tipo</th>
-            <th>SKU</th>
-            <th>Operador</th>
-            <th>Data / Hora</th>
+            <th>{{ $t('history.slot') }}</th>
+            <th>{{ $t('history.type') }}</th>
+            <th>{{ $t('slot.sku') }}</th>
+            <th>{{ $t('history.operator') }}</th>
+            <th>{{ $t('history.time') }}</th>
             <th>Obs</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="6" class="empty-row">Carregando...</td>
+            <td colspan="6" class="empty-row">{{ $t('common.loading') }}</td>
           </tr>
           <tr v-else-if="!movements.length">
-            <td colspan="6" class="empty-row">Nenhum movimento encontrado</td>
+            <td colspan="6" class="empty-row">{{ $t('history.noResults') }}</td>
           </tr>
           <tr v-for="m in movements" :key="m.id" class="movement-row">
             <td><span class="addr-pill">{{ m.slotId }}</span></td>
             <td>
               <span class="tag" :class="m.type === 'entry' ? 'tag-red' : 'tag-green'">
-                {{ m.type === 'entry' ? '▶ ENTRADA' : '◀ SAÍDA' }}
+                {{ m.type === 'entry' ? '▶ ' + $t('history.typeEntry') : '◀ ' + $t('history.typeExit') }}
               </span>
             </td>
             <td><span class="sku-text">{{ m.sku || '—' }}</span></td>
@@ -59,9 +59,9 @@
 
     <!-- Pagination -->
     <div class="pagination">
-      <button class="icon-btn" :disabled="offset === 0" @click="prev">← Anterior</button>
+      <button class="icon-btn" :disabled="offset === 0" @click="prev">← {{ $t('common.previous') || 'Anterior' }}</button>
       <span class="page-info">{{ offset / PAGE_SIZE + 1 }} / {{ Math.ceil(total / PAGE_SIZE) || 1 }}</span>
-      <button class="icon-btn" :disabled="offset + PAGE_SIZE >= total" @click="next">Próximo →</button>
+      <button class="icon-btn" :disabled="offset + PAGE_SIZE >= total" @click="next">{{ $t('common.next') || 'Próximo' }} →</button>
     </div>
   </div>
 </template>
@@ -75,6 +75,7 @@ definePageMeta({
 })
 
 const api = useWarehouseApi()
+const { t } = useI18n()
 const PAGE_SIZE = 50
 
 const movements = ref<Movement[]>([])

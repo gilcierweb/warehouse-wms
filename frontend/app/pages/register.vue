@@ -171,7 +171,7 @@ definePageMeta({
 
 const { register } = useAuth()
 const { push } = useAlerts()
-const t = useI18n()
+const { t } = useI18n()
 
 const username = ref('')
 const email = ref('')

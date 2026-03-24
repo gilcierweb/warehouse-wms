@@ -170,7 +170,7 @@ definePageMeta({
 const route = useRoute()
 const { resetPassword } = useAuth()
 const { push } = useAlerts()
-const t = useI18n()
+const { t } = useI18n()
 
 const token = computed(() => route.query.token as string || '')
 const password = ref('')

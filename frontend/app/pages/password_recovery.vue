@@ -126,7 +126,7 @@ definePageMeta({
 
 const { recoverPassword } = useAuth()
 const { push } = useAlerts()
-const t = useI18n()
+const { t } = useI18n()
 
 const email = ref('')
 const isLoading = ref(false)

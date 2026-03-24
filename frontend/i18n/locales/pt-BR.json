@@ -148,7 +148,9 @@
     "yes": "Sim",
     "no": "Não",
     "actions": "Ações",
-    "noData": "Sem dados"
+    "noData": "Sem dados",
+    "previous": "Anterior",
+    "next": "Próximo"
   },
   "errors": {
     "generic": "Ocorreu um erro",
@@ -162,5 +164,39 @@
     "required": "Campo obrigatório",
     "invalidEmail": "Email inválido",
     "minLength": "Mínimo de {min} caracteres"
+  },
+  "header": {
+    "brandTitle": "WMS",
+    "brandSubtitle": "Gestão de Armazém",
+    "refreshData": "Atualizar dados",
+    "logout": "Logout"
+  },
+  "footer": {
+    "systemName": "WMS - Sistema de Gestão de Armazém",
+    "version": "v1.0.0",
+    "slots": "Slots",
+    "rate": "Taxa",
+    "status": "Status",
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "lastUpdate": "Última atualização",
+    "justNow": "Agora",
+    "minutes": "min",
+    "hours": "h",
+    "refresh": "Atualizar",
+    "info": "Informações do Sistema",
+    "system": "Sistema",
+    "wmsSystem": "WMS Warehouse Management",
+    "api": "API",
+    "websocket": "WebSocket",
+    "totalSlots": "Total de Slots",
+    "occupancy": "Ocupação",
+    "dataUpdated": "Dados atualizados",
+    "updateFailed": "Falha ao atualizar"
+  },
+  "slotGrid": {
+    "street": "RUA",
+    "occupied": "C",
+    "free": "V"
   }
 }

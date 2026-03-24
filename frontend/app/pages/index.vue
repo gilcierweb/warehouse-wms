@@ -120,7 +120,7 @@ definePageMeta({
 const api = useWarehouseApi()
 const store = useWarehouseStore()
 const { push } = useAlerts()
-const t = useI18n()
+const { t } = useI18n()
 
 const { streets, globalStats, bulkLoad } = store
 const search = ref('')

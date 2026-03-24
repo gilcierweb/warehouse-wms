@@ -1,14 +1,14 @@
 <template>
   <div class="settings-page">
     <header class="page-header">
-      <h1 class="page-title">CONFIGURAÇÕES</h1>
+      <h1 class="page-title">{{ $t('settings.title') }}</h1>
     </header>
 
     <div class="settings-body">
 
       <!-- Alert thresholds -->
       <section class="settings-section">
-        <div class="section-title">ALERTAS DE CAPACIDADE</div>
+        <div class="section-title">{{ $t('settings.notifications') }}</div>
         <div class="section-body">
           <div class="setting-row">
             <div class="setting-info">
@@ -42,7 +42,7 @@
 
       <!-- Warehouse layout -->
       <section class="settings-section">
-        <div class="section-title">LAYOUT DO ARMAZÉM</div>
+        <div class="section-title">{{ $t('menu.map') }}</div>
         <div class="section-body">
           <div class="setting-row">
             <div class="setting-info">
@@ -91,8 +91,8 @@
       </section>
 
       <div class="save-row">
-        <button class="save-btn" @click="save">Salvar configurações</button>
-        <span v-if="saved" class="saved-msg">✓ Salvo com sucesso</span>
+        <button class="save-btn" @click="save">{{ $t('settings.save') }}</button>
+        <span v-if="saved" class="saved-msg">✓ {{ $t('settings.saved') }}</span>
       </div>
     </div>
   </div>
@@ -104,6 +104,7 @@ definePageMeta({
   middleware: ['auth']
 })
 const { push } = useAlerts()
+const { t } = useI18n()
 
 const ALL_STREETS = ['A','B','C','D','E','F','G','H']
 

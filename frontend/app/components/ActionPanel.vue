@@ -74,7 +74,7 @@ const emit = defineEmits<{ done: [] }>()
 const api = useWarehouseApi()
 const store = useWarehouseStore()
 const { push } = useAlerts()
-const t = useI18n()
+const { t } = useI18n()
 
 const location = ref('')
 const sku = ref('')

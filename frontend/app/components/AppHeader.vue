@@ -1,8 +1,8 @@
 <template>
   <header class="app-header">
     <div class="header-brand">
-      <h1 class="brand-title">WMS</h1>
-      <span class="brand-subtitle">Gestão de Armazém</span>
+      <h1 class="brand-title">{{ $t('header.brandTitle') }}</h1>
+      <span class="brand-subtitle">{{ $t('header.brandSubtitle') }}</span>
     </div>
 
     <nav class="header-nav">
@@ -19,13 +19,13 @@
     </nav>
 
     <div class="header-actions">
-      <button class="action-btn" title="Atualizar dados" @click="refreshData">
+      <button class="action-btn" :title="$t('header.refreshData')" @click="refreshData">
         <span>↻</span>
       </button>
-      <button class="action-btn" title="Configurações" @click="$router.push('/settings')">
+      <button class="action-btn" :title="$t('menu.settings')" @click="$router.push('/settings')">
         <span>⚙</span>
       </button>
-      <button v-if="isAuthenticated" class="action-btn logout-btn" title="Logout" @click="handleLogout">
+      <button v-if="isAuthenticated" class="action-btn logout-btn" :title="$t('header.logout')" @click="handleLogout">
         <span>⏻</span>
       </button>
     </div>
@@ -33,18 +33,19 @@
 </template>
 
 <script setup lang="ts">
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const store = useWarehouseStore()
 const { push } = useAlerts()
 const { isAuthenticated, logout } = useAuth()
 
-const navItems = [
-  { path: '/', label: 'Mapa', icon: '◪' },
-  { path: '/dashboard', label: 'Dashboard', icon: '▤' },
-  { path: '/history', label: 'Histórico', icon: '◖' },
-  { path: '/settings', label: 'Configurações', icon: '⚙' }
-]
+const navItems = computed(() => [
+  { path: '/', label: t('menu.map'), icon: '◪' },
+  { path: '/dashboard', label: t('menu.dashboard'), icon: '▤' },
+  { path: '/history', label: t('menu.history'), icon: '◖' },
+  { path: '/settings', label: t('menu.settings'), icon: '⚙' }
+])
 
 function isActive(path: string): boolean {
   if (path === '/' && route.path === '/') return true
@@ -57,9 +58,9 @@ async function refreshData() {
     const api = useWarehouseApi()
     const slots = await api.fetchSlots()
     store.bulkLoad(slots)
-    push({ type: 'success', message: 'Dados atualizados com sucesso' })
+    push({ type: 'success', message: t('footer.dataUpdated') })
   } catch {
-    push({ type: 'danger', message: 'Falha ao atualizar dados' })
+    push({ type: 'danger', message: t('footer.updateFailed') })
   }
 }
 

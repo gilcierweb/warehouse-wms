@@ -2,20 +2,20 @@
   <footer class="app-footer">
     <div class="footer-left">
       <div class="system-info">
-        <span class="system-name">WMS - Warehouse Management System</span>
-        <span class="system-version">v1.0.0</span>
+        <span class="system-name">{{ $t('footer.systemName') }}</span>
+        <span class="system-version">{{ $t('footer.version') }}</span>
       </div>
       <div class="footer-stats">
         <span class="stat-item">
-          <span class="stat-label">Slots:</span>
+          <span class="stat-label">{{ $t('footer.slots') }}:</span>
           <span class="stat-value">{{ globalStats.value.total }}</span>
         </span>
         <span class="stat-item">
-          <span class="stat-label">Taxa:</span>
+          <span class="stat-label">{{ $t('footer.rate') }}:</span>
           <span class="stat-value">{{ globalStats.value.pct.toFixed(1) }}%</span>
         </span>
         <span class="stat-item">
-          <span class="stat-label">Status:</span>
+          <span class="stat-label">{{ $t('footer.status') }}:</span>
           <span class="stat-value" :class="statusClass">{{ wsStatus }}</span>
         </span>
       </div>
@@ -25,7 +25,7 @@
       <div class="last-sync">
         <span class="sync-icon" :class="{ 'sync-icon--active': isSyncing }">⟳</span>
         <span class="sync-text">
-          Última atualização: {{ lastSyncFormatted }}
+          {{ $t('footer.lastUpdate') }}: {{ lastSyncFormatted }}
         </span>
       </div>
     </div>
@@ -33,7 +33,7 @@
     <div class="footer-right">
       <div class="footer-actions">
         <button class="footer-btn" @click="refreshData" :disabled="isRefreshing">
-          <span>Atualizar</span>
+          <span>{{ $t('footer.refresh') }}</span>
         </button>
         <button class="footer-btn" @click="showInfo = true">
           <span>ℹ</span>
@@ -46,33 +46,33 @@
       <div v-if="showInfo" class="modal-overlay" @click.self="showInfo = false">
         <div class="modal-content">
           <div class="modal-header">
-            <h3>Informações do Sistema</h3>
+            <h3>{{ $t('footer.info') }}</h3>
             <button class="modal-close" @click="showInfo = false">✕</button>
           </div>
           <div class="modal-body">
             <div class="info-grid">
               <div class="info-item">
-                <span class="info-label">Sistema:</span>
-                <span class="info-value">WMS Warehouse Management</span>
+                <span class="info-label">{{ $t('footer.system') }}:</span>
+                <span class="info-value">{{ $t('footer.wmsSystem') }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Versão:</span>
+                <span class="info-label">{{ $t('footer.version') }}:</span>
                 <span class="info-value">1.0.0</span>
               </div>
               <div class="info-item">
-                <span class="info-label">API:</span>
+                <span class="info-label">{{ $t('footer.api') }}:</span>
                 <span class="info-value">{{ apiBaseUrl }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">WebSocket:</span>
+                <span class="info-label">{{ $t('footer.websocket') }}:</span>
                 <span class="info-value">{{ wsStatus }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Total de Slots:</span>
+                <span class="info-label">{{ $t('footer.totalSlots') }}:</span>
                 <span class="info-value">{{ globalStats.value.total }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Ocupação:</span>
+                <span class="info-label">{{ $t('footer.occupancy') }}:</span>
                 <span class="info-value">{{ globalStats.value.pct.toFixed(1) }}%</span>
               </div>
             </div>
@@ -84,6 +84,7 @@
 </template>
 
 <script setup lang="ts">
+const { t } = useI18n()
 const store = useWarehouseStore()
 const ws = useWarehouseWS()
 const { push } = useAlerts()
@@ -94,7 +95,7 @@ const isRefreshing = ref(false)
 const lastSync = ref(new Date())
 
 const globalStats = computed(() => store.globalStats)
-const wsStatus = computed(() => ws.connected.value ? 'Conectado' : 'Desconectado')
+const wsStatus = computed(() => ws.connected.value ? t('footer.connected') : t('footer.disconnected'))
 const statusClass = computed(() => ws.connected.value ? 'stat-value--online' : 'stat-value--offline')
 const isSyncing = computed(() => ws.connected.value && ws.lastEvent.value)
 const apiBaseUrl = computed(() => config.public.apiBase)
@@ -103,9 +104,9 @@ const lastSyncFormatted = computed(() => {
   const now = new Date()
   const diff = now.getTime() - lastSync.value.getTime()
   
-  if (diff < 60000) return 'Agora'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)} min`
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)} h`
+  if (diff < 60000) return t('footer.justNow')
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} ${t('footer.minutes')}`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)} ${t('footer.hours')}`
   return lastSync.value.toLocaleDateString('pt-BR')
 })
 
@@ -116,15 +117,14 @@ async function refreshData() {
     const slots = await api.fetchSlots()
     store.bulkLoad(slots)
     lastSync.value = new Date()
-    push({ type: 'success', message: 'Dados atualizados' })
+    push({ type: 'success', message: t('footer.dataUpdated') })
   } catch {
-    push({ type: 'danger', message: 'Falha ao atualizar' })
+    push({ type: 'danger', message: t('footer.updateFailed') })
   } finally {
     isRefreshing.value = false
   }
 }
 
-// Atualizar timestamp quando receber eventos WebSocket
 watch(() => ws.lastEvent.value, () => {
   lastSync.value = new Date()
 })
