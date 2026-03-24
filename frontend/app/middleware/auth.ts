@@ -1,6 +1,6 @@
 export default defineNuxtRouteMiddleware((to, from) => {
-  const { isAuthenticated } = useAuth()
-  
+  const { isAuthenticated, user } = useAuth()
+   
   // Public routes - accessible without authentication
   const publicRoutes = ['/login', '/register']
   
@@ -19,5 +19,5 @@ export default defineNuxtRouteMiddleware((to, from) => {
       sessionStorage.setItem('redirectAfterLogin', to.fullPath)
     }
     return navigateTo('/login')
-  }
+  }  
 })

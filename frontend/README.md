@@ -164,6 +164,8 @@ yarn preview
 bun run preview
 
 npx nuxi@latest module add i18n
+npx nuxi@latest module add pinia
+pnpm add pinia-plugin-persistedstate-2
 
 ```
 

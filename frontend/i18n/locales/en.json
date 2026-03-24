@@ -50,7 +50,7 @@
     "dashboard": "Dashboard",
     "map": "Map",
     "history": "History",
-    "slotsCrud": "Slots CRUD",
+    "slotsCrud": "Slots",
     "settings": "Settings",
     "export": "Export"
   },
