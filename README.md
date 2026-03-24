@@ -46,7 +46,7 @@ Complete Warehouse Management System (WMS) with Rust backend (Actix-Web) and Nux
 - **Runtime**: Node.js 20+
 
 ### Infrastructure
-- **Database**: PostgreSQL 16 (Alpine)
+- **Database**: PostgreSQL 18 (Alpine)
 - **Containerization**: Docker + Docker Compose
 - **Base Images**: Alpine Linux (lightweight and secure)
 
@@ -66,13 +66,13 @@ warehouse-wms/
 │   │   ├── errors/            # Error handling
 │   │   ├── middleware/        # JWT auth middleware
 │   │   ├── models/            # Data models (User, Slot, Movement, etc.)
-│   │   ├── repositories/        # Database access layer
+│   │   ├── repositories/      # Database access layer
 │   │   ├── routes/            # Route definitions
 │   │   └── ws/                # WebSocket handlers
 │   ├── migrations/            # Diesel migrations
 │   ├── Cargo.toml
 │   └── Dockerfile
-├── frontend/                   # Nuxt.js 3 SPA
+├── frontend/                  # Nuxt.js 4 SPA
 │   ├── app/                   # Nuxt app directory
 │   │   ├── app.vue            # Root component
 │   │   ├── assets/            # CSS and assets
