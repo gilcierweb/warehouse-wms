@@ -2,6 +2,7 @@ pub mod base;
 pub mod base_repository;
 pub mod macros;
 pub mod container;
+pub mod traits;
 
 pub mod users_repository;
 pub mod profiles_repository;

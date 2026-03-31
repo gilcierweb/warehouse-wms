@@ -49,5 +49,28 @@ macro_rules! impl_crud {
                 self.run(move |conn| diesel::delete($table.find(id)).execute(conn)).await
             }
         }
+
+        #[async_trait::async_trait]
+        impl crate::repositories::traits::IRepository<$model, $new_model> for crate::repositories::base::BaseRepo {
+            async fn all(&self) -> diesel::QueryResult<Vec<$model>> {
+                $trait_name::all(self).await
+            }
+
+            async fn find(&self, id: &uuid::Uuid) -> diesel::QueryResult<$model> {
+                $trait_name::find(self, id).await
+            }
+
+            async fn create(&self, item: &$new_model) -> diesel::QueryResult<$model> {
+                $trait_name::create(self, item).await
+            }
+
+            async fn update(&self, id: &uuid::Uuid, item: &$new_model) -> diesel::QueryResult<$model> {
+                $trait_name::update(self, id, item).await
+            }
+
+            async fn destroy(&self, id: &uuid::Uuid) -> diesel::QueryResult<usize> {
+                $trait_name::destroy(self, id).await
+            }
+        }
     };
 }

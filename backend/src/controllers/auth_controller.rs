@@ -62,49 +62,52 @@ pub async fn login(
 ) -> AppResult<HttpResponse> {
     println!("DEBUG: Login attempt for username: {}", body.username);
     
-    let mut conn = db.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
     let username  = body.username.clone();
     let password  = body.password.clone();
-    let username_for_error = username.clone(); // Clone for error message
+    let db_clone = db.clone();
 
     let user: User = web::block(move || {
+        use diesel::RunQueryDsl;
+        use diesel::OptionalExtension;
+        
+        let mut conn = db_clone.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
         println!("DEBUG: Querying database for user with username: {}", username);
+        
         let by_username = users::table
             .filter(users::username.eq(&username))
             .filter(users::status.eq(true))
             .select(User::as_select())
             .first(&mut conn)
-            .optional()?;
+            .optional()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
             
-        if by_username.is_some() {
+        if let Some(u) = by_username {
             println!("DEBUG: User found by username");
-            return Ok(by_username);
+            return Ok(u);
         }
         
-        // If not found by username, try by email
         println!("DEBUG: User not found by username, trying by email");
         let by_email = users::table
             .filter(users::email.eq(&username))
             .filter(users::status.eq(true))
             .select(User::as_select())
             .first(&mut conn)
-            .optional()?;
+            .optional()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         
-        if by_email.is_some() {
+        if let Some(u) = by_email {
             println!("DEBUG: User found by email");
-            return Ok(by_email);
+            return Ok(u);
         }
         
         println!("DEBUG: User not found by email");
-        Err(diesel::result::Error::NotFound)
+        Err(AppError::Unauthorized)
     })
     .await
-    .map_err(|e| AppError::Internal(e.to_string()))?
-    .map_err(AppError::Database)?
-    .ok_or_else(|| {
-        println!("DEBUG: User not found: {}", username_for_error);
-        AppError::Unauthorized
-    })?;
+    .map_err(|e| {
+        println!("DEBUG: Block error: {}", e);
+        AppError::Internal(e.to_string())
+    })??;
 
     println!("DEBUG: User found: {}, verifying password...", user.username);
     let valid = verify(password, user.encrypted_password.clone());
@@ -124,10 +127,13 @@ pub async fn login(
 
     let now = Utc::now().naive_utc();
     let user_id = user.id;
+    let db_update = db.clone();
 
     // Update user login info in separate block
     let updated_user: User = web::block(move || {
-        let mut conn = db.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        use diesel::RunQueryDsl;
+        
+        let mut conn = db_update.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set((
                 users::current_sign_in_at.eq(Some(now)),

@@ -9,6 +9,7 @@ errors:
   conflict: "Conflito: %{message}"
   database: "Erro de banco de dados: %{message}"
   internal: "Erro interno: %{message}"
+  not_found_generic: "Registro não encontrado"
 
 # Auth
 auth:
@@ -30,6 +31,14 @@ auth:
     success: "Senha atualizada com sucesso"
   me:
     title: "Usuário Atual"
+
+# Generic CRUD
+crud:
+  created: "Registro criado com sucesso"
+  updated: "Registro atualizado com sucesso"
+  deleted: "Registro excluído com sucesso"
+  not_found: "Registro não encontrado"
+  error: "Erro na operação"
 
 # Slots
 slots:
@@ -53,6 +62,15 @@ slots:
     total_slots: "Total de Vagas"
     occupied: "Ocupadas"
     free: "Livres"
+  create:
+    title: "Criar Vaga"
+    success: "Vaga criada com sucesso"
+  update:
+    title: "Atualizar Vaga"
+    success: "Vaga atualizada com sucesso"
+  delete:
+    title: "Excluir Vaga"
+    success: "Vaga excluída com sucesso"
 
 # Movements
 movements:
@@ -64,11 +82,70 @@ movements:
     success: "Movimento desfeito com sucesso"
     not_found: "Nenhum movimento encontrado para desfazer"
     error: "Erro ao desfazer movimento"
+    note: "Operação desfeita"
   create:
     title: "Criar Movimento"
     success: "Movimento criado com sucesso"
   get:
     title: "Obter Movimento"
+    not_found: "Movimento não encontrado"
+  update:
+    title: "Atualizar Movimento"
+    success: "Movimento atualizado com sucesso"
+  delete:
+    title: "Excluir Movimento"
+    success: "Movimento excluído com sucesso"
+
+# Users
+users:
+  list:
+    title: "Listar Usuários"
+  get:
+    title: "Obter Usuário"
+    not_found: "Usuário não encontrado"
+  create:
+    title: "Criar Usuário"
+    success: "Usuário criado com sucesso"
+  update:
+    title: "Atualizar Usuário"
+    success: "Usuário atualizado com sucesso"
+  delete:
+    title: "Excluir Usuário"
+    success: "Usuário excluído com sucesso"
+
+# Profiles
+profiles:
+  list:
+    title: "Listar Perfis"
+  get:
+    title: "Obter Perfil"
+    not_found: "Perfil não encontrado"
+  create:
+    title: "Criar Perfil"
+    success: "Perfil criado com sucesso"
+  update:
+    title: "Atualizar Perfil"
+    success: "Perfil atualizado com sucesso"
+  delete:
+    title: "Excluir Perfil"
+    success: "Perfil excluído com sucesso"
+
+# Alert Configs
+alert_configs:
+  list:
+    title: "Listar Configurações de Alerta"
+  get:
+    title: "Obter Configuração de Alerta"
+    not_found: "Configuração não encontrada"
+  create:
+    title: "Criar Configuração de Alerta"
+    success: "Configuração criada com sucesso"
+  update:
+    title: "Atualizar Configuração de Alerta"
+    success: "Configuração atualizada com sucesso"
+  delete:
+    title: "Excluir Configuração de Alerta"
+    success: "Configuração excluída com sucesso"
 
 # Export
 export:
@@ -81,6 +158,8 @@ export:
     slots_header: "Endereço,Rua,Lane,Posição,Status,SKU,Atualizado em"
     movements_title: "MOVIMENTOS"
     movements_header: "ID,Endereço,Tipo,Operador,SKU,Data/Hora,Obs."
+  success: "Arquivo exportado com sucesso"
+  error: "Erro ao exportar arquivo"
 
 # Database
 database:
@@ -88,6 +167,18 @@ database:
   error: "Erro no banco de dados"
   query_error: "Erro na consulta ao banco de dados"
   transaction_error: "Erro na transação do banco de dados"
+
+# WebSocket
+websocket:
+  connection_error: "Erro de conexão WebSocket"
+  message_error: "Erro ao processar mensagem"
+  invalid_json: "JSON inválido"
+
+# Health
+health:
+  title: "Verificação de Saúde"
+  status_ok: "Serviço funcionando"
+  status_error: "Serviço com problemas"
 
 # Common
 common:
@@ -109,3 +200,20 @@ common:
   note: "Observação"
   entry: "Entrada"
   exit: "Saída"
+  all: "Todos"
+  filter: "Filtrar"
+  search: "Buscar"
+  save: "Salvar"
+  cancel: "Cancelar"
+  delete: "Excluir"
+  edit: "Editar"
+  view: "Visualizar"
+  create: "Criar"
+  update: "Atualizar"
+  yes: "Sim"
+  no: "Não"
+  loading: "Carregando..."
+  success: "Sucesso"
+  error: "Erro"
+  warning: "Aviso"
+  info: "Informação"

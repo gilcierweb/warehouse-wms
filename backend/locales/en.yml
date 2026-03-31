@@ -9,6 +9,7 @@ errors:
   conflict: "Conflict: %{message}"
   database: "Database error: %{message}"
   internal: "Internal error: %{message}"
+  not_found_generic: "Record not found"
 
 # Auth
 auth:
@@ -30,6 +31,14 @@ auth:
     success: "Password updated successfully"
   me:
     title: "Current User"
+
+# Generic CRUD
+crud:
+  created: "Record created successfully"
+  updated: "Record updated successfully"
+  deleted: "Record deleted successfully"
+  not_found: "Record not found"
+  error: "Operation error"
 
 # Slots
 slots:
@@ -53,6 +62,15 @@ slots:
     total_slots: "Total Slots"
     occupied: "Occupied"
     free: "Free"
+  create:
+    title: "Create Slot"
+    success: "Slot created successfully"
+  update:
+    title: "Update Slot"
+    success: "Slot updated successfully"
+  delete:
+    title: "Delete Slot"
+    success: "Slot deleted successfully"
 
 # Movements
 movements:
@@ -64,11 +82,70 @@ movements:
     success: "Movement undone successfully"
     not_found: "No movement found to undo"
     error: "Error undoing movement"
+    note: "Operation undone"
   create:
     title: "Create Movement"
     success: "Movement created successfully"
   get:
     title: "Get Movement"
+    not_found: "Movement not found"
+  update:
+    title: "Update Movement"
+    success: "Movement updated successfully"
+  delete:
+    title: "Delete Movement"
+    success: "Movement deleted successfully"
+
+# Users
+users:
+  list:
+    title: "List Users"
+  get:
+    title: "Get User"
+    not_found: "User not found"
+  create:
+    title: "Create User"
+    success: "User created successfully"
+  update:
+    title: "Update User"
+    success: "User updated successfully"
+  delete:
+    title: "Delete User"
+    success: "User deleted successfully"
+
+# Profiles
+profiles:
+  list:
+    title: "List Profiles"
+  get:
+    title: "Get Profile"
+    not_found: "Profile not found"
+  create:
+    title: "Create Profile"
+    success: "Profile created successfully"
+  update:
+    title: "Update Profile"
+    success: "Profile updated successfully"
+  delete:
+    title: "Delete Profile"
+    success: "Profile deleted successfully"
+
+# Alert Configs
+alert_configs:
+  list:
+    title: "List Alert Configs"
+  get:
+    title: "Get Alert Config"
+    not_found: "Alert config not found"
+  create:
+    title: "Create Alert Config"
+    success: "Alert config created successfully"
+  update:
+    title: "Update Alert Config"
+    success: "Alert config updated successfully"
+  delete:
+    title: "Delete Alert Config"
+    success: "Alert config deleted successfully"
 
 # Export
 export:
@@ -81,6 +158,8 @@ export:
     slots_header: "Address,Street,Lane,Position,Status,SKU,Updated at"
     movements_title: "MOVEMENTS"
     movements_header: "ID,Address,Type,Operator,SKU,Date/Time,Notes"
+  success: "File exported successfully"
+  error: "Error exporting file"
 
 # Database
 database:
@@ -88,6 +167,18 @@ database:
   error: "Database error"
   query_error: "Database query error"
   transaction_error: "Database transaction error"
+
+# WebSocket
+websocket:
+  connection_error: "WebSocket connection error"
+  message_error: "Error processing message"
+  invalid_json: "Invalid JSON"
+
+# Health
+health:
+  title: "Health Check"
+  status_ok: "Service is running"
+  status_error: "Service has issues"
 
 # Common
 common:
@@ -109,3 +200,20 @@ common:
   note: "Notes"
   entry: "Entry"
   exit: "Exit"
+  all: "All"
+  filter: "Filter"
+  search: "Search"
+  save: "Save"
+  cancel: "Cancel"
+  delete: "Delete"
+  edit: "Edit"
+  view: "View"
+  create: "Create"
+  update: "Update"
+  yes: "Yes"
+  no: "No"
+  loading: "Loading..."
+  success: "Success"
+  error: "Error"
+  warning: "Warning"
+  info: "Information"

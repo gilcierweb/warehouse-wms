@@ -1,6 +1,7 @@
 use crate::db::database::DBPool;
 use diesel::prelude::*;
 
+#[derive(Clone)]
 pub struct BaseRepo {
     pub pool: DBPool,
 }

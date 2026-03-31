@@ -1,33 +1,31 @@
 use std::sync::Arc;
 
 use crate::db::database::DBPool;
+use crate::models::alert_config::{AlertConfig, NewAlertConfig};
+use crate::models::movement::{Movement, NewMovement};
+use crate::models::profile::{NewProfile, Profile};
+use crate::models::slot::{NewSlot, Slot};
+use crate::models::user::{NewUser, User};
 use crate::repositories::base::BaseRepo;
-use crate::repositories::users_repository::IUserRepository;
-use crate::repositories::profiles_repository::IProfileRepository;
-use crate::repositories::movements_repository::IMovementRepository;
-use crate::repositories::slots_repository::ISlotRepository;
-use crate::repositories::alert_configs_repository::IAlertConfigRepository;
+use crate::repositories::traits::IRepository;
 
-/// Central dependency injection container.
-/// Groups all repositories behind trait objects (`Arc<dyn Trait>`) for:
-/// - Thread-safe sharing across Actix workers
-/// - Easy swapping with mock implementations in tests
 pub struct AppContainer {
-    pub users: Arc<dyn IUserRepository>,
-    pub profiles: Arc<dyn IProfileRepository>,
-    pub movements: Arc<dyn IMovementRepository>,
-    pub slots: Arc<dyn ISlotRepository>,
-    pub alert_configs: Arc<dyn IAlertConfigRepository>,
+    pub users: Arc<dyn IRepository<User, NewUser>>,
+    pub profiles: Arc<dyn IRepository<Profile, NewProfile>>,
+    pub movements: Arc<dyn IRepository<Movement, NewMovement>>,
+    pub slots: Arc<dyn IRepository<Slot, NewSlot>>,
+    pub alert_configs: Arc<dyn IRepository<AlertConfig, NewAlertConfig>>,
 }
 
 impl AppContainer {
     pub fn new(pool: DBPool) -> Self {
+        let base = BaseRepo::new(pool);
         Self {
-            users: Arc::new(BaseRepo::new(pool.clone())),
-            profiles: Arc::new(BaseRepo::new(pool.clone())),
-            movements: Arc::new(BaseRepo::new(pool.clone())),
-            slots: Arc::new(BaseRepo::new(pool.clone())),
-            alert_configs: Arc::new(BaseRepo::new(pool)),
+            users: Arc::new(base.clone()),
+            profiles: Arc::new(base.clone()),
+            movements: Arc::new(base.clone()),
+            slots: Arc::new(base.clone()),
+            alert_configs: Arc::new(base),
         }
     }
 }

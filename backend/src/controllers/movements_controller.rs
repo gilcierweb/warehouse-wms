@@ -96,24 +96,21 @@ pub async fn undo_movement(
     body: web::Json<UndoRequest>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let mut conn = db.pool.get().map_err(|_e| {
-        actix_web::error::ErrorInternalServerError("Database connection error")
+        actix_web::error::ErrorInternalServerError(t!("database.connection_error"))
     })?;
     let addr = body.slot_address.to_uppercase();
 
     let updated_slot = web::block(move || {
         conn.transaction::<_, diesel::result::Error, _>(|conn| {
-            // 1. Resolve o endereço para o UUID interno do slot
             let slot: Slot = slots::table
                 .filter(slots::address.eq(&addr))
                 .first::<Slot>(conn)?;
 
-            // 2. Encontra o último movimento deste slot pela FK UUID
             let last_movement: Movement = movements::table
                 .filter(movements::slot_id.eq(slot.id))
                 .order(movements::created_at.desc())
                 .first::<Movement>(conn)?;
 
-            // 3. Inverte a ação
             let new_status = if last_movement.movement_type == 1 { "free" } else { "occupied" };
 
             diesel::update(slots::table.find(slot.id))
@@ -124,19 +121,17 @@ pub async fn undo_movement(
                 ))
                 .execute(conn)?;
 
-            // 4. Remove o movimento desfeito
             diesel::delete(movements::table.find(last_movement.id))
                 .execute(conn)?;
 
-            // 5. Registra o undo como novo movimento
             diesel::insert_into(movements::table)
                 .values(&NewMovement {
                     slot_id: Some(slot.id),
-                    movement_type: if new_status == "free" { 2 } else { 1 }, // 2=exit, 1=entry
+                    movement_type: if new_status == "free" { 2 } else { 1 },
                     operator_id: last_movement.operator_id,
                     operator_name: Some(format!("[UNDO] {:?}", last_movement.operator_name)),
                     sku: None,
-                    note: Some("Operação desfeita".to_string()),
+                    note: Some(t!("movements.undo.note").to_string()),
                 })
                 .execute(conn)?;
 
@@ -144,11 +139,11 @@ pub async fn undo_movement(
         })
     })
     .await
-    .map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.error").to_string()))?;
+    .map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.error")))?;
 
     match updated_slot {
         Ok(slot) => Ok(HttpResponse::Ok().json(&slot)),
-        Err(_) => Ok(HttpResponse::NotFound().body(t!("movements.undo.not_found").to_string())),
+        Err(_) => Ok(HttpResponse::NotFound().body(t!("movements.undo.not_found"))),
     }
 }
 

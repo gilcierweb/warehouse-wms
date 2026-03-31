@@ -329,6 +329,126 @@ curl http://localhost:8080/health
 
 ---
 
+## Arquitetura de Repositórios
+
+O projeto utiliza uma arquitetura de repositórios com traits genéricas para reduzir código boilerplate.
+
+### Estrutura
+
+```
+repositories/
+├── base.rs              # BaseRepo com executor de queries
+├── traits/mod.rs        # Trait IRepository<M, N> unificada
+├── macros.rs            # Macro impl_crud! para gerar CRUD
+└── container.rs         # AppContainer com injeção de dependências
+```
+
+### Trait IRepository
+
+A trait `IRepository<M, N>` define o contrato CRUD:
+- `M` - Modelo de retorno (ex: `User`)
+- `N` - Modelo de entrada para create/update (ex: `NewUser`)
+
+```rust
+#[async_trait]
+pub trait IRepository<M, N>: Send + Sync where M: 'static, N: 'static {
+    async fn all(&self) -> QueryResult<Vec<M>>;
+    async fn find(&self, id: &Uuid) -> QueryResult<M>;
+    async fn create(&self, item: &N) -> QueryResult<M>;
+    async fn update(&self, id: &Uuid, item: &N) -> QueryResult<M>;
+    async fn destroy(&self, id: &Uuid) -> QueryResult<usize>;
+}
+```
+
+### Macro impl_crud!
+
+Para cada repositório, basta definir a trait e usar a macro:
+
+```rust
+// repositories/users_repository.rs
+#[async_trait]
+pub trait IUserRepository: Send + Sync {
+    async fn all(&self) -> QueryResult<Vec<User>>;
+    async fn find(&self, id: &Uuid) -> QueryResult<User>;
+    async fn create(&self, item: &NewUser) -> QueryResult<User>;
+    async fn update(&self, id: &Uuid, item: &NewUser) -> QueryResult<User>;
+    async fn destroy(&self, id: &Uuid) -> QueryResult<usize>;
+}
+
+// repositories/mod.rs
+impl_crud!(IUserRepository, User, NewUser, users::table);
+```
+
+A macro gera automaticamente a implementação para `BaseRepo` e para `IRepository`.
+
+### Controller Genérico
+
+O `generic_controller.rs` fornece funções helpers para os controllers:
+
+```rust
+use crate::repositories::traits::IRepository;
+
+// GET /recurso - Listar todos
+pub async fn get_all<M, N, R>(repo: &Arc<R>) -> HttpResponse { ... }
+
+// GET /recurso/:id - Buscar por ID
+pub async fn get_by_id<M, N, R>(repo: &Arc<R>, id: web::Path<Uuid>) -> HttpResponse { ... }
+
+// POST /recurso - Criar
+pub async fn create<M, N, R>(repo: &Arc<R>, item: web::Json<N>) -> HttpResponse { ... }
+
+// PUT /recurso/:id - Atualizar
+pub async fn update<M, N, R>(repo: &Arc<R>, id: web::Path<Uuid>, item: web::Json<N>) -> HttpResponse { ... }
+
+// DELETE /recurso/:id - Deletar
+pub async fn delete<M, N, R>(repo: &Arc<R>, id: web::Path<Uuid>) -> HttpResponse { ... }
+```
+
+### Exemplo de Controller Simplificado
+
+```rust
+use actix_web::{get, web, HttpResponse, Responder};
+use uuid::Uuid;
+use crate::repositories::container::AppContainer;
+
+#[get("/slots/{id}")]
+pub async fn get_slot_by_id(
+    container: web::Data<AppContainer>,
+    id: web::Path<Uuid>,
+) -> impl Responder {
+    super::generic_controller::get_by_id(&container.slots, id).await
+}
+
+#[post("/slots")]
+pub async fn create_slot(
+    container: web::Data<AppContainer>,
+    slot_request: web::Json<CreateSlotRequest>,
+) -> Result<impl Responder, Error> {
+    if let Err(e) = slot_request.validate() {
+        return Ok(HttpResponse::BadRequest().json(serde_json::json!({
+            "error": e, "code": "VALIDATION_ERROR"
+        })));
+    }
+    let new_slot: NewSlot = slot_request.into_inner().into();
+    Ok(super::generic_controller::create(&container.slots, web::Json(new_slot)).await)
+}
+```
+
+### Container de Dependencies
+
+O `AppContainer` expõe os repositórios via traits genéricas:
+
+```rust
+pub struct AppContainer {
+    pub users: Arc<dyn IRepository<User, NewUser>>,
+    pub slots: Arc<dyn IRepository<Slot, NewSlot>>,
+    pub movements: Arc<dyn IRepository<Movement, NewMovement>>,
+    // ...
+}
+```
+
+---
+
 ## Environment Variables
 
 | Variable           | Default             | Description                          |
