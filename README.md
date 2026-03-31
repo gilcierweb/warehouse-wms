@@ -176,8 +176,11 @@ export DATABASE_URL=postgres://username:password@localhost:5432/warehouse_wms_de
 # Run migrations
 diesel migration run
 
-# Start server
+# Start server in release mode
 cargo run --release
+# Start server in debug mode
+cargo run
+
 ```
 
 #### Frontend
@@ -185,10 +188,10 @@ cargo run --release
 cd frontend
 
 # Install dependencies
-npm install
+pnpm install
 
 # Start in development mode
-npm run dev
+pnpm dev
 
 pnpm add tailwindcss @tailwindcss/vite
 ```
