@@ -318,7 +318,7 @@ impl From<Slot> for SlotResponse {
     }
 }
 
-// ── CRUD Operations ─────────────────────────────────────────────
+// -- CRUD Operations 
 
 /// GET /api/slots/:id
 #[get("/slots/{id}")]
