@@ -166,6 +166,10 @@ cd backend
 # Install Diesel CLI
 cargo install diesel_cli --no-default-features --features postgres
 
+# Generate JWT secret
+openssl rand -base64 32
+export JWT_SECRET="your-secret-key-min-32-characters"
+export JWT_EXPIRY_HOURS=8
 # Configure database
 export DATABASE_URL=postgres://username:password@localhost:5432/warehouse_wms_development
 
