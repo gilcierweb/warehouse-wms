@@ -52,6 +52,21 @@ Complete Warehouse Management System (WMS) with Rust backend (Actix-Web) and Nux
 
 ---
 
+## Demo
+
+![App Warehouse WMS](assets/images/screenshot-1.webp) 
+
+![App Warehouse WMS](assets/images/screenshot-2.webp) 
+
+![App Warehouse WMS](assets/images/screenshot-3.webp) 
+
+![App Warehouse WMS](assets/images/screenshot-4.webp) 
+
+![App Warehouse WMS](assets/images/screenshot-5.webp) 
+
+![App Warehouse WMS](assets/images/screenshot-6.webp) 
+
+
 ## Project Structure
 
 ```
