@@ -1,11 +1,14 @@
+#![allow(dead_code)]
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(i32)]
 pub enum UserRole {
     Admin = 1,
-    Operator = 2,
-    Viewer = 3,
+    Moderator = 2,
+    Seller = 3,
+    Bidder = 4,
 }
 
 impl UserRole {
@@ -20,8 +23,9 @@ impl TryFrom<i32> for UserRole {
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             1 => Ok(UserRole::Admin),
-            2 => Ok(UserRole::Operator),
-            3 => Ok(UserRole::Viewer),
+            2 => Ok(UserRole::Moderator),
+            3 => Ok(UserRole::Seller),
+            4 => Ok(UserRole::Bidder),
             _ => Err("Invalid role value"),
         }
     }
@@ -34,5 +38,6 @@ impl From<UserRole> for i32 {
 }
 
 pub const ROLE_ADMIN: UserRole = UserRole::Admin;
-pub const ROLE_OPERATOR: UserRole = UserRole::Operator;
-pub const ROLE_VIEWER: UserRole = UserRole::Viewer;
+pub const ROLE_MODERATOR: UserRole = UserRole::Moderator;
+pub const ROLE_SELLER: UserRole = UserRole::Seller;
+pub const ROLE_BIDDER: UserRole = UserRole::Bidder;

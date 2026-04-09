@@ -1,71 +1,55 @@
+use actix_web::{web, Responder};
 use std::sync::Arc;
-use actix_web::{web, HttpResponse};
 use uuid::Uuid;
-use rust_i18n::t;
 
 use crate::repositories::traits::IRepository;
 
-pub async fn get_all<M, N, R>(repo: &Arc<R>) -> HttpResponse
+/// Generic get_all that works with any repository implementing IRepository
+pub async fn get_all<M, N, R>(repo: Arc<R>) -> impl Responder
 where
     M: serde::Serialize + 'static,
     N: 'static,
     R: IRepository<M, N> + ?Sized,
 {
-    match repo.all().await {
-        Ok(data) => HttpResponse::Ok().json(data),
-        Err(diesel::result::Error::NotFound) => HttpResponse::NotFound().body(t!("crud.not_found")),
-        Err(_) => HttpResponse::InternalServerError().body(t!("database.error")),
-    }
+    super::handle_result(repo.all().await)
 }
 
-pub async fn get_by_id<M, N, R>(repo: &Arc<R>, id: web::Path<Uuid>) -> HttpResponse
+/// Generic get_by_id that works with any repository implementing IRepository
+pub async fn get_by_id<M, N, R>(repo: Arc<R>, id: web::Path<Uuid>) -> impl Responder
 where
     M: serde::Serialize + 'static,
     N: 'static,
     R: IRepository<M, N> + ?Sized,
 {
-    match repo.find(&id).await {
-        Ok(data) => HttpResponse::Ok().json(data),
-        Err(diesel::result::Error::NotFound) => HttpResponse::NotFound().body(t!("crud.not_found")),
-        Err(_) => HttpResponse::InternalServerError().body(t!("database.error")),
-    }
+    super::handle_result(repo.find(&id).await)
 }
 
-pub async fn create<M, N, R>(repo: &Arc<R>, item: web::Json<N>) -> HttpResponse
+/// Generic create that works with any repository implementing IRepository
+pub async fn create<M, N, R>(repo: Arc<R>, item: web::Json<N>) -> impl Responder
 where
     M: serde::Serialize + 'static,
     N: Clone + 'static,
     R: IRepository<M, N> + ?Sized,
 {
-    match repo.create(&item).await {
-        Ok(data) => HttpResponse::Created().json(data),
-        Err(diesel::result::Error::NotFound) => HttpResponse::NotFound().body(t!("crud.not_found")),
-        Err(e) => HttpResponse::BadRequest().body(e.to_string()),
-    }
+    super::handle_result_created(repo.create(&item).await)
 }
 
-pub async fn update<M, N, R>(repo: &Arc<R>, id: web::Path<Uuid>, item: web::Json<N>) -> HttpResponse
+/// Generic update that works with any repository implementing IRepository
+pub async fn update<M, N, R>(repo: Arc<R>, id: web::Path<Uuid>, item: web::Json<N>) -> impl Responder
 where
     M: serde::Serialize + 'static,
     N: Clone + 'static,
     R: IRepository<M, N> + ?Sized,
 {
-    match repo.update(&id, &item).await {
-        Ok(data) => HttpResponse::Ok().json(data),
-        Err(diesel::result::Error::NotFound) => HttpResponse::NotFound().body(t!("crud.not_found")),
-        Err(_) => HttpResponse::InternalServerError().body(t!("database.error")),
-    }
+    super::handle_result(repo.update(&id, &item).await)
 }
 
-pub async fn delete<M, N, R>(repo: &Arc<R>, id: web::Path<Uuid>) -> HttpResponse
+/// Generic delete that works with any repository implementing IRepository
+pub async fn delete<M, N, R>(repo: Arc<R>, id: web::Path<Uuid>) -> impl Responder
 where
-    M: serde::Serialize + 'static,
+    M: 'static,
     N: 'static,
     R: IRepository<M, N> + ?Sized,
 {
-    match repo.destroy(&id).await {
-        Ok(_) => HttpResponse::NoContent().finish(),
-        Err(diesel::result::Error::NotFound) => HttpResponse::NotFound().body(t!("crud.not_found")),
-        Err(_) => HttpResponse::InternalServerError().body(t!("database.error")),
-    }
+    super::handle_result_no_content(repo.destroy(&id).await)
 }

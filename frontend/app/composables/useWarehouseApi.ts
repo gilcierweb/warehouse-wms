@@ -1,106 +1,55 @@
 import type { Slot, Movement, WarehouseStats, CreateSlotRequest, UpdateSlotRequest } from '~/types'
+import { useAuthStore } from '~/stores/auth'
 
 export const useWarehouseApi = () => {
-  const config = useRuntimeConfig()
-  const base = config.public.apiBase
-  const { token, logout } = useAuth()
+  const { authFetch } = useAuth()
 
-  // Helper to get headers with auth
-  const getHeaders = (contentType = true): Record<string, string> => {
-    const headers: Record<string, string> = {}
-    if (token.value) {
-      headers['Authorization'] = `Bearer ${token.value}`
-    }
-    if (contentType) {
-      headers['Content-Type'] = 'application/json'
-    }
-    return headers
-  }
-
-  // Handle 401 errors
-  const handleResponse = async (response: Response) => {
-    if (response.status === 401) {
-      logout()
-      throw new Error('Session expired. Please login again.')
-    }
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw errorData
-    }
-    return response.json()
-  }
-
-  // ── Slots ──────────────────────────────────────────────
   async function fetchSlots(): Promise<Slot[]> {
-    const response = await fetch(`${base}/api/slots`, {
-      headers: getHeaders(false)
-    })
-    return handleResponse(response)
+    return authFetch('/slots')
   }
 
   async function getSlotById(id: string): Promise<Slot> {
-    const response = await fetch(`${base}/api/slots/${id}`, {
-      headers: getHeaders(false)
-    })
-    return handleResponse(response)
+    return authFetch(`/slots/${id}`)
   }
 
   async function createSlot(slot: CreateSlotRequest): Promise<Slot> {
-    const response = await fetch(`${base}/api/slots`, {
+    return authFetch('/slots', {
       method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(slot)
+      body: slot,
     })
-    return handleResponse(response)
   }
 
   async function updateSlot(id: string, slot: UpdateSlotRequest): Promise<Slot> {
-    const response = await fetch(`${base}/api/slots/${id}`, {
+    return authFetch(`/slots/${id}`, {
       method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(slot)
+      body: slot,
     })
-    return handleResponse(response)
   }
 
   async function deleteSlot(id: string): Promise<void> {
-    const response = await fetch(`${base}/api/slots/${id}`, {
+    return authFetch(`/slots/${id}`, {
       method: 'DELETE',
-      headers: getHeaders(false)
     })
-    return handleResponse(response)
   }
 
   async function entry(slotId: string, sku?: string, note?: string): Promise<Slot> {
-    console.log('API: Calling entry for slot', slotId)
-    const response = await fetch(`${base}/api/slots/${encodeURIComponent(slotId)}/entry`, {
+    return authFetch(`/slots/${encodeURIComponent(slotId)}/entry`, {
       method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ sku, note })
+      body: { sku, note },
     })
-    const result = await handleResponse(response)
-    console.log('API: Entry success', result)
-    return result
   }
 
   async function exit(slotId: string, note?: string): Promise<Slot> {
-    const response = await fetch(`${base}/api/slots/${encodeURIComponent(slotId)}/exit`, {
+    return authFetch(`/slots/${encodeURIComponent(slotId)}/exit`, {
       method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ note })
+      body: { note },
     })
-    return handleResponse(response)
   }
 
-  // ── Stats ──────────────────────────────────────────────
   async function fetchStats(): Promise<WarehouseStats> {
-    const response = await fetch(`${base}/api/stats`, {
-      headers: getHeaders(false)
-    })
-    return handleResponse(response)
+    return authFetch('/stats')
   }
 
-  // ── History ────────────────────────────────────────────
   async function fetchMovements(params?: {
     slotId?: string
     type?: 'entry' | 'exit'
@@ -110,7 +59,7 @@ export const useWarehouseApi = () => {
     offset?: number
   }): Promise<Movement[]> {
     const queryParams = new URLSearchParams()
-    if (params?.slotId) queryParams.append('slotId', params.slotId)
+    if (params?.slotId) queryParams.append('slot_address', params.slotId)
     if (params?.type) queryParams.append('type', params.type)
     if (params?.from) queryParams.append('from', params.from)
     if (params?.to) queryParams.append('to', params.to)
@@ -118,33 +67,29 @@ export const useWarehouseApi = () => {
     if (params?.offset) queryParams.append('offset', params.offset.toString())
 
     const query = queryParams.toString()
-    const response = await fetch(`${base}/api/movements${query ? `?${query}` : ''}`, {
-      headers: getHeaders(false)
-    })
-    return handleResponse(response)
+    return authFetch(`/movements/filtered${query ? `?${query}` : ''}`)
   }
 
   async function undoLastMovement(slotId: string): Promise<void> {
-    const response = await fetch(`${base}/api/movements/undo`, {
+    return authFetch('/movements/undo', {
       method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ slotId })
+      body: { slotId },
     })
-    return handleResponse(response)
   }
 
-  // ── Export ─────────────────────────────────────────────
   function downloadExcel(): void {
-    const url = token.value
-      ? `${base}/api/export/excel?token=${token.value}`
-      : `${base}/api/export/excel`
+    const authStore = useAuthStore()
+    const url = authStore.accessToken
+      ? `${useRuntimeConfig().public.apiBase}/api/export/excel?token=${authStore.accessToken}`
+      : `${useRuntimeConfig().public.apiBase}/api/export/excel`
     window.open(url, '_blank')
   }
 
   function downloadPdf(): void {
-    const url = token.value
-      ? `${base}/api/export/pdf?token=${token.value}`
-      : `${base}/api/export/pdf`
+    const authStore = useAuthStore()
+    const url = authStore.accessToken
+      ? `${useRuntimeConfig().public.apiBase}/api/export/pdf?token=${authStore.accessToken}`
+      : `${useRuntimeConfig().public.apiBase}/api/export/pdf`
     window.open(url, '_blank')
   }
 

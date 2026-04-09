@@ -1,5 +1,5 @@
-use diesel::QueryResult;
 use async_trait::async_trait;
+use diesel::QueryResult;
 
 #[async_trait]
 pub trait IRepository<M, N>: Send + Sync

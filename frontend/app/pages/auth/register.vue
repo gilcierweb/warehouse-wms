@@ -47,19 +47,6 @@
 
         <!-- Form -->
         <form class="auth-form" @submit.prevent="handleRegister">
-          <!-- Username -->
-          <div class="auth-field">
-            <label class="auth-label" for="regUsername">{{ $t('auth.username') }}*</label>
-            <input 
-              id="regUsername" 
-              v-model="username" 
-              type="text" 
-              :placeholder="$t('auth.username')" 
-              class="auth-input" 
-              required 
-            />
-          </div>
-
           <!-- Email -->
           <div class="auth-field">
             <label class="auth-label" for="regEmail">{{ $t('auth.email') }}*</label>
@@ -103,14 +90,34 @@
             </div>
           </div>
 
-          <!-- Account Type -->
+          <!-- Password Confirmation -->
           <div class="auth-field">
-            <label class="auth-label" for="regRole">{{ $t('auth.accountType') }}</label>
-            <select id="regRole" v-model="role" class="auth-select">
-              <option :value="2">{{ $t('auth.operatorRole') }}</option>
-              <option :value="1">{{ $t('auth.adminRole') }}</option>
-              <option :value="3">{{ $t('auth.viewerRole') }}</option>
-            </select>
+            <label class="auth-label" for="regPasswordConfirm">{{ $t('auth.confirmPassword') }}*</label>
+            <div class="auth-input-group">
+              <input 
+                id="regPasswordConfirm" 
+                v-model="passwordConfirmation" 
+                :type="showPassword ? 'text' : 'password'" 
+                :placeholder="$t('auth.confirmPassword')" 
+                required 
+                minlength="8"
+                class="auth-input-password"
+              />
+              <button
+                type="button"
+                class="auth-toggle-password"
+                aria-label="Toggle password visibility"
+                @click="showPassword = !showPassword"
+              >
+                <svg v-if="showPassword" class="auth-eye-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+                <svg v-else class="auth-eye-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <!-- Error Alert -->
@@ -173,20 +180,25 @@ const { register } = useAuth()
 const { push } = useAlerts()
 const { t } = useI18n()
 
-const username = ref('')
 const email = ref('')
 const password = ref('')
-const role = ref(2)
+const passwordConfirmation = ref('')
 const isLoading = ref(false)
 const error = ref('')
 const showPassword = ref(false)
 
 const handleRegister = async () => {
   error.value = ''
+  
+  if (password.value !== passwordConfirmation.value) {
+    error.value = t('auth.passwordMismatch')
+    return
+  }
+  
   isLoading.value = true
   
   try {
-    await register(username.value, email.value, password.value, role.value)
+    await register(email.value, password.value, passwordConfirmation.value)
     push({ type: 'success', message: t('auth.accountCreated') })
     await navigateTo('/login')
   } catch (err: any) {

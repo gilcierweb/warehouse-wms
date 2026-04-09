@@ -1,174 +1,140 @@
 import { defineStore } from 'pinia'
-import type { User, AuthResponse } from '~/types'
+import type { User, Profile } from '~/types'
 
+interface JwtPayload {
+  sub: string
+  exp: number
+  iat: number
+  roles?: string[]
+}
+
+/**
+ * Authentication Store - SSR-friendly with cookies
+ * 
+ * Features:
+ * - Uses cookies for persistence (SSR-compatible via pinia-plugin-persistedstate/nuxt)
+ * - Reactive authentication state
+ * - JWT payload parsing for user info and roles
+ * - Automatic hydration on server and client
+ */
 export const useAuthStore = defineStore('auth', () => {
-  // State (using useCookie for SSR support)
-  const token = useCookie<string | null>('wms_token', { 
-    maxAge: 60 * 60 * 24 * 7, 
-    path: '/',
-    default: () => null 
-  })
-  
-  const user = useCookie<User | null>('wms_user', { 
-    maxAge: 60 * 60 * 24 * 7, 
-    path: '/',
-    default: () => null 
-  })
-  
-  const isLoading = ref(false)
+  // State - all persisted to cookies automatically
+  const user = ref<User | null>(null)
+  const profile = ref<Profile | null>(null)
+  const accessToken = ref<string | null>(null)
+  const refreshToken = ref<string | null>(null)
+  const userRoles = ref<string[]>([])
+  const isInitialHydration = ref(true)
 
   // Getters
-  const isAuthenticated = computed(() => !!token.value)
-  const isAdmin = computed(() => user.value?.role === 1)
-  const isOperator = computed(() => user.value?.role === 2 || user.value?.role === 1)
-
-  const setToken = (newToken: string | null) => {
-    token.value = newToken
-  }
-
-  const setUser = (newUser: User | null) => {
-    user.value = newUser
-  }
-
-  const login = async (username: string, password: string): Promise<AuthResponse> => {
-    const config = useRuntimeConfig()
-    
+  const isAuthenticated = computed(() => {
+    // Simply check if user exists - token refresh is handled separately
+    return !!user.value
+  })
+  
+  const isTokenExpired = computed(() => {
+    if (!accessToken.value) return true
     try {
-      isLoading.value = true
-      
-      const response = await $fetch<AuthResponse>(`${config.public.apiBase}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: { username, password }
-      })
-      
-      setToken(response.token)
-      setUser({
-        id: response.user_id,
-        username: response.username,
-        role: response.role
-      })
-      
-      return response
-    } finally {
-      isLoading.value = false
+      const payload = parseJwt(accessToken.value)
+      return payload.exp * 1000 < Date.now()
+    } catch {
+      return true
+    }
+  })
+
+  const hasRole = computed(() => (role: string) => 
+    userRoles.value.includes(role) || userRoles.value.includes('admin')
+  )
+
+  const hasAnyRole = computed(() => (roles: string[]) => 
+    roles.some(role => userRoles.value.includes(role)) || userRoles.value.includes('admin')
+  )
+
+  // Actions
+  function setUser(u: User | null) {
+    user.value = u
+    if (u?.roles) {
+      userRoles.value = u.roles
     }
   }
 
-  const register = async (
-    username: string,
-    email: string,
-    password: string,
-    role: number = 2
-  ): Promise<void> => {
-    const config = useRuntimeConfig()
-    
-    await $fetch(`${config.public.apiBase}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: { username, email, password, role }
-    })
+  function setProfile(p: Profile | null) {
+    profile.value = p
   }
 
-  const recoverPassword = async (email: string): Promise<{ message: string; token: string }> => {
-    const config = useRuntimeConfig()
+  function setTokens(access: string | null, refresh: string | null) {
+    accessToken.value = access
+    refreshToken.value = refresh
     
-    const response = await $fetch<{ message: string; token: string }>(
-      `${config.public.apiBase}/api/auth/recover`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: { email }
-      }
-    )
-    
-    return response
-  }
-
-  const resetPassword = async (token: string, password: string): Promise<{ message: string }> => {
-    const config = useRuntimeConfig()
-    
-    const response = await $fetch<{ message: string }>(
-      `${config.public.apiBase}/api/auth/reset`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: { token, password }
-      }
-    )
-    
-    return response
-  }
-
-  const fetchCurrentUser = async (): Promise<void> => {
-    if (!token.value) return
-    
-    const config = useRuntimeConfig()
-    
-    try {
-      const response = await $fetch<{ id: string; username: string; role: number }>(
-        `${config.public.apiBase}/api/auth/me`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token.value}`
+    if (access) {
+      try {
+        const payload = parseJwt(access)
+        userRoles.value = payload.roles || []
+        
+        if (!user.value && payload.sub) {
+          user.value = {
+            id: payload.sub,
+            email: '',
           }
         }
-      )
-      
-      setUser({
-        id: response.id,
-        username: response.username,
-        role: response.role
-      })
-    } catch (error) {
-      console.error('❌ Token validation failed:', error)
-      // Token invalid or expired - clear auth state
-      logout()
+      } catch {
+        userRoles.value = []
+      }
+    } else {
+      userRoles.value = []
     }
   }
 
-  const logout = () => {
-    setToken(null)
-    setUser(null)
-    
-    if (import.meta.client) {
-      navigateTo('/login')
-    }
+  function logout() {
+    user.value = null
+    profile.value = null
+    accessToken.value = null
+    refreshToken.value = null
+    userRoles.value = []
   }
 
-  const initAuth = () => {
-    console.log('🚀 initAuth called')
-    
-    // Since we use useCookie, the token and user are already populated on both server and client.
-    // We only need to asynchronously validate the token with the server if we have one.
-    if (import.meta.client && token.value) {
-      console.log('🔍 Validating cookie token with server...')
-      fetchCurrentUser().catch(error => {
-        console.error('❌ Server validation failed:', error)
-      })
+  function parseJwt(token: string): JwtPayload {
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      throw new Error('Invalid JWT format')
     }
+    
+    const payloadPart = parts[1]
+    if (!payloadPart) {
+      throw new Error('Invalid JWT payload')
+    }
+    
+    const padding = 4 - (payloadPart.length % 4)
+    const base64 = padding === 4 ? payloadPart : payloadPart + '='.repeat(padding)
+    
+    return JSON.parse(atob(base64.replace(/-/g, '+').replace(/_/g, '/')))
   }
 
   return {
     // State
-    token: readonly(token),
-    user: readonly(user),
-    isLoading: readonly(isLoading),
-    
+    user,
+    profile,
+    accessToken,
+    refreshToken,
+    userRoles,
     // Getters
     isAuthenticated,
-    isAdmin,
-    isOperator,
-    
+    isTokenExpired,
+    hasRole,
+    hasAnyRole,
     // Actions
-    setToken,
     setUser,
-    login,
-    register,
-    recoverPassword,
-    resetPassword,
-    fetchCurrentUser,
+    setProfile,
+    setTokens,
     logout,
-    initAuth
+    parseJwt,
+    isInitialHydration,
+  }
+}, {
+  persist: {
+    // Tokens are NOT persisted here for security!
+    // Access token stays in memory
+    // Refresh token is in HttpOnly cookie (managed by backend)
+    pick: ['user', 'profile', 'userRoles']
   }
 })

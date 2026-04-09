@@ -24,9 +24,11 @@ impl BaseRepo {
             f(&mut conn)
         })
         .await
-        .unwrap_or_else(|e| Err(diesel::result::Error::DatabaseError(
-            diesel::result::DatabaseErrorKind::Unknown,
-            Box::new(e.to_string()),
-        )))
+        .unwrap_or_else(|e| {
+            Err(diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::Unknown,
+                Box::new(e.to_string()),
+            ))
+        })
     }
 }

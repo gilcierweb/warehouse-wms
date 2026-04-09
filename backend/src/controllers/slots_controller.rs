@@ -4,11 +4,11 @@ use serde::{Deserialize, Serialize};
 use rust_i18n::t;
 use uuid::Uuid;
 
-use crate::db::database::Database;
 use crate::db::schema::{movements, slots};
 use crate::models::{movement::NewMovement, slot::{Slot, CreateSlotRequest, UpdateSlotRequest, NewSlot}, slot::StreetStat, slot::WarehouseStats};
 use crate::ws::server::{HubData, WsEvent};
 use crate::repositories::container::AppContainer;
+use crate::repositories::ISlotRepository;
 
 // ── Request / Response DTOs ───────────────────────────────────
 
@@ -34,52 +34,49 @@ pub struct SlotFilter {
 /// GET /api/slots
 #[get("/slots")]
 pub async fn list_slots(
-    db: web::Data<Database>,
+    container: web::Data<AppContainer>,
     filter: web::Query<SlotFilter>,
 ) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
+    let slots = container
+        .run(move |conn| {
+            let mut query = slots::table.into_boxed();
 
-    let result = web::block(move || {
-        let mut query = slots::table.into_boxed();
+            if let Some(ref street) = filter.street {
+                query = query.filter(slots::street.eq(street.as_str()));
+            }
+            if let Some(ref status) = filter.status {
+                query = query.filter(slots::status.eq(status.as_str()));
+            }
 
-        if let Some(ref street) = filter.street {
-            query = query.filter(slots::street.eq(street.as_str()));
-        }
-        if let Some(ref status) = filter.status {
-            query = query.filter(slots::status.eq(status.as_str()));
-        }
+            query
+                .order((slots::street.asc(), slots::lane.asc(), slots::position.asc()))
+                .load::<Slot>(conn)
+        })
+        .await
+        .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
 
-        query
-            .order((slots::street.asc(), slots::lane.asc(), slots::position.asc()))
-            .load::<Slot>(&mut conn)
-    })
-    .await
-    .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
-
-    let slots = result.map_err(|_| ErrorInternalServerError(t!("database.query_error")))?;
     Ok(HttpResponse::Ok().json(slots))
 }
 
 /// GET /api/slots/:address  (ex: /api/slots/A-5-N2)
 #[get("/slots/{address}")]
 pub async fn get_slot(
-    db: web::Data<Database>,
+    container: web::Data<AppContainer>,
     address: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
     let addr = address.into_inner().to_uppercase();
     let addr_clone = addr.clone();
 
-    let result = web::block(move || {
-        slots::table
-            .filter(slots::address.eq(&addr))
-            .first::<Slot>(&mut conn)
-            .optional()
-    })
-    .await
-    .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
+    let slot = container
+        .run(move |conn| {
+            slots::table
+                .filter(slots::address.eq(&addr))
+                .first::<Slot>(conn)
+                .optional()
+        })
+        .await
+        .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
 
-    let slot = result.map_err(|_| ErrorInternalServerError("Database query error"))?;
     match slot {
         Some(s) => Ok(HttpResponse::Ok().json(s)),
         None => Ok(HttpResponse::NotFound().body(t!("slots.get.not_found", address = addr_clone).to_string())),
@@ -89,12 +86,11 @@ pub async fn get_slot(
 /// POST /api/slots/:address/entry  (ex: /api/slots/A-5-N2/entry)
 #[post("/slots/{address}/entry")]
 pub async fn entry(
-    db: web::Data<Database>,
+    container: web::Data<AppContainer>,
     hub: HubData,
     address: web::Path<String>,
     body: web::Json<EntryRequest>,
 ) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
     let addr = address.into_inner().to_uppercase();
     
     // TODO: Add authentication when middleware is implemented
@@ -103,11 +99,11 @@ pub async fn entry(
     let sku = body.sku.clone();
     let note = body.note.clone();
     
-    let result = web::block(move || {
+    let result = container.run(move |conn| {
         // 1. Busca slot
         let slot = match slots::table
             .filter(slots::address.eq(&addr))
-            .first::<Slot>(&mut conn) {
+            .first::<Slot>(conn) {
                 Ok(slot) => slot,
                 Err(e) => {
                     println!("DEBUG: Erro ao buscar slot: {}", e);
@@ -130,7 +126,7 @@ pub async fn entry(
                 slots::updated_at.eq(diesel::dsl::now),
                 slots::updated_by.eq(user_id)
             ))
-            .get_result(&mut conn)?;
+            .get_result(conn)?;
 
         // 4. Insere movement
         println!("DEBUG: Inserindo movement para slot ID: {}", slot.id);
@@ -143,15 +139,12 @@ pub async fn entry(
                 sku: sku,
                 note: note,
             })
-            .execute(&mut conn);
+            .execute(conn);
 
         Ok(updated)
     })
     .await
-    .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
-    
-    // Retorna resposta JSON simples
-    let updated = result.map_err(|e| {
+    .map_err(|e| {
         match e {
             diesel::result::Error::NotFound => ErrorNotFound(serde_json::json!({
                 "error": t!("slots.entry.slot_occupied").to_string(),
@@ -165,22 +158,21 @@ pub async fn entry(
     })?;
     
     // Envia evento WebSocket
-    let ws_event = WsEvent::slot_entry(&updated);
+    let ws_event = WsEvent::slot_entry(&result);
     hub.broadcast(ws_event);
     
-    let response = SlotResponse::from(updated);
+    let response = SlotResponse::from(result);
     Ok(HttpResponse::Ok().json(response))
 }
 
 /// POST /api/slots/:address/exit
 #[post("/slots/{address}/exit")]
 pub async fn exit(
-    db:    web::Data<Database>,
-    hub:     HubData,
+    container: web::Data<AppContainer>,
+    hub: HubData,
     address: web::Path<String>,
-    body:    web::Json<ExitRequest>,
+    body: web::Json<ExitRequest>,
 ) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
     let addr = address.into_inner().to_uppercase();
     
     // TODO: Add authentication when middleware is implemented
@@ -188,11 +180,11 @@ pub async fn exit(
     let operator_name = "System".to_string(); // Placeholder
     let note = body.note.clone();
 
-    let result = web::block(move || {
+    let result = container.run(move |conn| {
         // 1. Busca slot
         let slot = match slots::table
             .filter(slots::address.eq(&addr))
-            .first::<Slot>(&mut conn) {
+            .first::<Slot>(conn) {
                 Ok(slot) => slot,
                 Err(_) => return Err(diesel::result::Error::NotFound),
             };
@@ -205,7 +197,7 @@ pub async fn exit(
         // 3. Atualiza status para free
         let updated: Slot = diesel::update(slots::table.find(slot.id))
             .set(slots::status.eq("free"))
-            .get_result(&mut conn)?;
+            .get_result(conn)?;
 
         // 4. Insere movement
         diesel::insert_into(movements::table)
@@ -217,41 +209,35 @@ pub async fn exit(
                 sku: slot.sku,
                 note: note,
             })
-            .execute(&mut conn)?;
+            .execute(conn)?;
 
         Ok(updated)
     })
     .await
     .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
-
-    let updated = result.map_err(|_| ErrorInternalServerError(t!("database.transaction_error")))?;
     
     // Envia evento WebSocket
-    let ws_event = WsEvent::slot_exit(&updated);
+    let ws_event = WsEvent::slot_exit(&result);
     hub.broadcast(ws_event);
     
-    let response = SlotResponse::from(updated);
+    let response = SlotResponse::from(result);
     Ok(HttpResponse::Ok().json(response))
 }
 
 /// GET /api/stats
 #[get("/stats")]
-pub async fn get_stats(db: web::Data<Database>) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| ErrorInternalServerError(t!("database.connection_error").to_string()))?;
+pub async fn get_stats(container: web::Data<AppContainer>) -> Result<HttpResponse, Error> {
+    let stats = container
+        .run(|conn| compute_stats(conn))
+        .await
+        .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
 
-    let result = web::block(move || -> Result<_, diesel::result::Error> {
-        compute_stats(&mut conn)
-    })
-    .await
-    .map_err(|_| ErrorInternalServerError(t!("database.error").to_string()))?;
-
-    let stats = result.map_err(|_| ErrorInternalServerError("Database query error"))?;
     Ok(HttpResponse::Ok().json(stats))
 }
 
 // ── compute_stats (interno) ───────────────────────────────────
 
-pub fn compute_stats(
+fn compute_stats(
     conn: &mut diesel::PgConnection,
 ) -> Result<WarehouseStats, diesel::result::Error> {
     use diesel::dsl::count_star;
@@ -326,7 +312,7 @@ pub async fn get_slot_by_id(
     container: web::Data<AppContainer>,
     id: web::Path<Uuid>,
 ) -> impl Responder {
-    super::generic_controller::get_by_id(&container.slots, id).await
+    super::generic_controller::get_by_id(container.slots.clone(), id).await
 }
 
 /// POST /api/slots
@@ -334,16 +320,20 @@ pub async fn get_slot_by_id(
 pub async fn create_slot(
     container: web::Data<AppContainer>,
     slot_request: web::Json<CreateSlotRequest>,
-) -> Result<impl Responder, Error> {
+) -> HttpResponse {
     if let Err(e) = slot_request.validate() {
-        return Ok(HttpResponse::BadRequest().json(serde_json::json!({
+        return HttpResponse::BadRequest().json(serde_json::json!({
             "error": e,
             "code": "VALIDATION_ERROR"
-        })));
+        }));
     }
     
     let new_slot: NewSlot = slot_request.into_inner().into();
-    Ok(super::generic_controller::create(&container.slots, web::Json(new_slot)).await)
+    let result = container.slots.create(&new_slot).await;
+    match result {
+        Ok(slot) => HttpResponse::Created().json(slot),
+        Err(_) => HttpResponse::BadRequest().body("Error creating slot"),
+    }
 }
 
 /// PUT /api/slots/:id
@@ -352,17 +342,17 @@ pub async fn update_slot_by_id(
     container: web::Data<AppContainer>,
     id: web::Path<Uuid>,
     update_request: web::Json<UpdateSlotRequest>,
-) -> Result<impl Responder, Error> {
+) -> HttpResponse {
     if let Err(e) = update_request.validate() {
-        return Ok(HttpResponse::BadRequest().json(serde_json::json!({
+        return HttpResponse::BadRequest().json(serde_json::json!({
             "error": e,
             "code": "VALIDATION_ERROR"
-        })));
+        }));
     }
     
     let existing_slot = match container.slots.find(&id).await {
         Ok(slot) => slot,
-        Err(_) => return Ok(HttpResponse::NotFound().body(t!("slots.get.not_found").to_string())),
+        Err(_) => return HttpResponse::NotFound().body(t!("slots.get.not_found").to_string()),
     };
     
     let updated_slot = NewSlot {
@@ -375,7 +365,11 @@ pub async fn update_slot_by_id(
         updated_by: None,
     };
     
-    Ok(super::generic_controller::update(&container.slots, id, web::Json(updated_slot)).await)
+    let result = container.slots.update(&id, &updated_slot).await;
+    match result {
+        Ok(slot) => HttpResponse::Ok().json(slot),
+        Err(_) => HttpResponse::BadRequest().body("Error updating slot"),
+    }
 }
 
 /// DELETE /api/slots/:id
@@ -384,5 +378,5 @@ pub async fn delete_slot_by_id(
     container: web::Data<AppContainer>,
     id: web::Path<Uuid>,
 ) -> impl Responder {
-    super::generic_controller::delete(&container.slots, id).await
+    super::generic_controller::delete(container.slots.clone(), id).await
 }

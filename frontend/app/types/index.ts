@@ -1,77 +1,108 @@
-export type SlotStatus = 'free' | 'occupied'
+// -- API Types
+
+export interface ApiFetchFunction {
+  <T = any>(url: string, options?: ApiFetchOptions): Promise<T>
+}
+
+export interface ApiFetchOptions {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+  body?: any
+  headers?: Record<string, string>
+  auth?: boolean
+}
+
+// -- Auth
+
+export interface User {
+  id: string
+  email: string
+  profile_id?: string
+  is_otp_enabled?: boolean
+  roles?: string[]
+}
+
+export interface AuthResponse {
+  access_token: string
+  refresh_token: string
+  token_type: string
+  expires_in: number
+  user: User
+}
+
+// -- Profile
+
+export interface Profile {
+  id: string
+  user_id: string
+  nickname: string | null
+  bio: string | null
+  avatar: string | null
+  phone: string | null
+  status: boolean
+  social_network: Record<string, string>
+}
+
+// -- Route Meta
+
+export interface AuthRouteMeta {
+  requiresAuth?: boolean
+  guestOnly?: boolean
+  requiredRoles?: string[]
+  loginRedirect?: string
+  homeRedirect?: string
+}
+
+// -- Slot
 
 export interface Slot {
-  id: string         // UUID
-  address: string    // e.g. "A-5-N2"
-  street: string     // "A"
-  position: number   // 5
-  lane: string       // "N2"
-  status: SlotStatus
-  sku?: string
-  updated_by?: string
+  id: string
+  address: string
+  street: string
+  position: number
+  lane: string
+  status: string
+  sku: string | null
+  updated_by: string | null
   created_at: string
   updated_at: string
 }
 
 export interface CreateSlotRequest {
-  street: string    // A-Z
-  position: number  // 1-30
-  lane: string      // N1 | N2 | N3
+  address: string
+  street: string
+  position: number
+  lane: string
+  status?: string
 }
 
 export interface UpdateSlotRequest {
-  status?: 'free' | 'occupied'
-  sku?: string
+  address?: string
+  street?: string
+  position?: number
+  lane?: string
+  status?: string
+  sku?: string | null
 }
 
-export interface Street {
-  name: string
-  occupied: number
-  free: number
-  total: number
-  pct: number
-  slots: Slot[]
-}
+// -- Movement
 
 export interface Movement {
   id: string
-  slotId: string
-  type: 'entry' | 'exit'
-  operator: string
-  sku?: string
-  note?: string
-  createdAt: string
+  slot_id: string
+  movement_type: number
+  operator_id: string | null
+  operator_name: string | null
+  sku: string | null
+  note: string | null
+  created_at: string
+  updated_at: string
 }
+
+// -- Stats
 
 export interface WarehouseStats {
-  total: number
-  occupied: number
-  free: number
-  pct: number
-  streets: { name: string; pct: number; occupied: number; total: number }[]
-}
-
-export interface WsMessage {
-  event: 'slot_updated' | 'stats_updated' | 'alert'
-  payload: Slot | WarehouseStats | { message: string; pct: number }
-}
-
-export interface AlertConfig {
-  threshold: number
-  notifyEmail: boolean
-  notifyBrowser: boolean
-}
-
-export interface User {
-  id: string
-  username: string
-  email?: string
-  role: number
-}
-
-export interface AuthResponse {
-  token: string
-  user_id: string
-  username: string
-  role: number
+  total_slots: number
+  occupied_slots: number
+  available_slots: number
+  occupancy_rate: number
 }

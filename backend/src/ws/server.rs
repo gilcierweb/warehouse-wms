@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use futures_util::StreamExt;
 
-// ── WsEvent ───────────────────────────────────────────────────
+// -- WsEvent 
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "snake_case")]

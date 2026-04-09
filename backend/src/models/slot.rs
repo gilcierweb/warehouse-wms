@@ -4,8 +4,8 @@ use diesel::{AsChangeset, Associations, Insertable, Queryable, Selectable};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::db::schema::slots;
 use super::user::User;
+use crate::db::schema::slots;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum SlotStatus {
@@ -33,7 +33,7 @@ impl Lane {
     pub fn as_str(&self) -> &'static str {
         match self {
             Lane::N1 => "N1",
-            Lane::N2 => "N2", 
+            Lane::N2 => "N2",
             Lane::N3 => "N3",
         }
     }
@@ -90,11 +90,11 @@ impl Slot {
     pub fn street_char(&self) -> char {
         self.street.chars().next().unwrap_or('A')
     }
-    
+
     pub fn status_enum(&self) -> SlotStatus {
         SlotStatus::from(self.status.clone())
     }
-    
+
     pub fn lane_enum(&self) -> Lane {
         Lane::from(self.lane.clone())
     }
@@ -114,31 +114,38 @@ pub struct NewSlot {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CreateSlotRequest {
-    pub street: String,    // A-Z
-    pub position: i16,      // 1-30
-    pub lane: String,      // N1 | N2 | N3
+    pub street: String, // A-Z
+    pub position: i16,  // 1-30
+    pub lane: String,   // N1 | N2 | N3
 }
 
 impl CreateSlotRequest {
     pub fn validate(&self) -> Result<(), String> {
         // Validate street (A-Z)
-        if self.street.len() != 1 || !self.street.chars().next().unwrap_or('A').is_ascii_uppercase() {
+        if self.street.len() != 1
+            || !self
+                .street
+                .chars()
+                .next()
+                .unwrap_or('A')
+                .is_ascii_uppercase()
+        {
             return Err("Street must be a single uppercase letter (A-Z)".to_string());
         }
-        
+
         // Validate position (1-30)
         if self.position < 1 || self.position > 30 {
             return Err("Position must be between 1 and 30".to_string());
         }
-        
+
         // Validate lane (N1 | N2 | N3)
         if !matches!(self.lane.as_str(), "N1" | "N2" | "N3") {
             return Err("Lane must be N1, N2, or N3".to_string());
         }
-        
+
         Ok(())
     }
-    
+
     pub fn generate_address(&self) -> String {
         format!("{}-{}-{}", self.street, self.position, self.lane)
     }

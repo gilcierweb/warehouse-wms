@@ -47,14 +47,14 @@
 
         <!-- Form -->
         <form class="auth-form" @submit.prevent="handleLogin">
-          <!-- Username -->
+          <!-- Email -->
           <div class="auth-field">
-            <label class="auth-label" for="userUsername">{{ $t('auth.usernameOrEmail') }}*</label>
+            <label class="auth-label" for="userEmail">{{ $t('auth.email') }}*</label>
             <input 
-              id="userUsername" 
-              v-model="username" 
-              type="text" 
-              :placeholder="$t('auth.usernameOrEmail')" 
+              id="userEmail" 
+              v-model="email" 
+              type="email" 
+              :placeholder="$t('auth.email')" 
               class="auth-input" 
               required 
             />
@@ -120,7 +120,7 @@
         <!-- Register Link -->
         <p class="auth-footer-text">
           {{ $t('auth.newOnPlatform') }}
-          <NuxtLink to="/register" class="auth-link">
+          <NuxtLink to="/auth/register" class="auth-link">
             {{ $t('auth.createAccount') }}
           </NuxtLink>
         </p>
@@ -149,15 +149,14 @@
 import { ref, watch } from 'vue'
 
 definePageMeta({
-  layout: 'auth',
-  middleware: ['auth']
+  layout: 'auth'
 })
 
 const { login, initAuth, isAuthenticated, user } = useAuth()
 const { push } = useAlerts()
 const { t } = useI18n()
 
-const username = ref('')
+const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const error = ref('')
@@ -169,7 +168,7 @@ const handleLogin = async () => {
   isLoading.value = true
 
   try {
-    await login(username.value, password.value)
+    await login(email.value, password.value)
     
     push({ type: 'success', message: 'Welcome back!' })
 

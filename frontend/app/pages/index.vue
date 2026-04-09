@@ -113,8 +113,7 @@
 import type { Slot } from '~/types'
 
 definePageMeta({ 
-  layout: 'default',
-  middleware: ['auth']
+  layout: 'default'
 })
 
 const api = useWarehouseApi()
@@ -158,19 +157,9 @@ onMounted(async () => {
   try {
     const slots = await api.fetchSlots()
     bulkLoad(slots)
-    
-    // Inicializar WebSocket
-    const ws = useWarehouseWS()
-    ws.connect()
   } catch {
     push({ type: 'warning', message: t('errors.apiOffline') })
   }
-})
-
-// Limpar WebSocket ao sair da página
-onUnmounted(() => {
-  const ws = useWarehouseWS()
-  ws.disconnect()
 })
 </script>
 

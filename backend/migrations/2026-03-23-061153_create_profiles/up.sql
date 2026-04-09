@@ -2,14 +2,18 @@
 CREATE TABLE IF NOT EXISTS profiles
 (
     id          UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-    first_name VARCHAR(255) NULL,
-    last_name VARCHAR(255) NULL,
-    full_name VARCHAR(255) NULL,
+    -- Sensitive fields stored encrypted with pgcrypto
+        first_name_enc  BYTEA,
+        last_name_enc   BYTEA,
+        phone_enc       BYTEA,
+    full_name  BYTEA,
     nickname VARCHAR(255) NULL,
     bio TEXT NULL,
     birthday DATE NULL,
     avatar VARCHAR(255) NULL,
     phone BIGINT NULL,
+    social_network  JSONB NOT NULL DEFAULT '{}',
+        status          BOOLEAN NOT NULL DEFAULT TRUE,
     user_id UUID NOT NULL UNIQUE,
    
     created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -1,8 +1,8 @@
 <template>
   <div>
-     <AppHeader /> 
+    <AppHeader /> 
     <slot />
-     <AppFooter />
-     <AppToast />
+    <AppFooter />
+    <AppToast />
   </div>
 </template>

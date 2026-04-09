@@ -28,6 +28,7 @@
     "admin": "Admin",
     "or": "or",
     "invalidCredentials": "Invalid credentials",
+    "emailNotConfirmed": "Email not confirmed. Check your inbox.",
     "sessionExpired": "Session expired. Please login again.",
     "passwordMismatch": "Passwords do not match",
     "invalidOrExpiredToken": "Invalid or expired token",
@@ -159,7 +160,12 @@
     "apiOffline": "API offline — using local demo data",
     "slotNotFound": "Position not found",
     "slotOccupied": "Position already occupied",
-    "slotFree": "Position already free"
+    "slotFree": "Position already free",
+    "auth": {
+      "registrationFailed": "Registration failed",
+      "loginFailed": "Login failed",
+      "unknown": "Unknown error"
+    }
   },
   "validation": {
     "required": "Required field",

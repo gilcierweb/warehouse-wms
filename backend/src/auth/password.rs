@@ -1,6 +1,8 @@
+#![allow(dead_code)]
+
 use argon2::{
-    password_hash::{PasswordHasher, PasswordVerifier, SaltString, PasswordHash},
     Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
 };
 use rand::rngs::OsRng;
 
@@ -24,8 +26,7 @@ pub fn password_hash(password: String) -> String {
 }
 
 pub fn verify(password: String, hash: String) -> bool {
-    let parsed_hash = PasswordHash::new(&hash)
-        .expect("Failed to parse hash");
+    let parsed_hash = PasswordHash::new(&hash).expect("Failed to parse hash");
 
     Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)

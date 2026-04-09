@@ -54,5 +54,19 @@ export default defineNuxtConfig({
         cookieKey: 'i18n_redirected',
         redirectOn: 'root'
       }
-    },
+  },
+   
+  piniaPluginPersistedstate: {
+          storage: 'cookies',
+          cookieOptions: {
+              sameSite: 'lax',           // ✅ Proteção CSRF + navegação amigável
+              // NOTA: httpOnly: true NÃO pode ser usado aqui porque o plugin
+              // precisa ler o cookie via JavaScript para hidratar o store.
+              // Tokens de autenticação NÃO devem ser persistidos via este plugin!
+              // Eles devem ficar em memória (ref) ou em cookies HttpOnly gerenciados
+              // pelo backend Rust (proxy /api/proxy preserva esses cookies).
+              maxAge: 7 * 24 * 60 * 60,  // 7 dias
+          },
+  },
+  
 })

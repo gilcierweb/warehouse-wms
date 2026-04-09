@@ -1,8 +1,12 @@
-pub mod auth_controller;
+// pub mod auth_controller; // TODO: Re-enable when auth_controller is fixed
 pub mod slots_controller;
 pub mod movements_controller;
 pub mod export_controller;
 pub mod generic_controller;
+pub mod health_controller;
+pub mod users_controller;
+pub mod auth_controller;
+pub mod ws_controller;
 
 use actix_web::{HttpResponse, Responder};
 use diesel::QueryResult;

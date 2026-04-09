@@ -1,37 +1,34 @@
 use crate::{
-    db::database::Database,
     models::{movement::Movement, slot::Slot},
     db::schema::{movements, slots},
+    repositories::AppContainer,
 };
 use actix_web::{web, HttpResponse, Error, get};
 use chrono::Utc;
 use diesel::prelude::*;
 use rust_i18n::t;
 
-// ── GET /api/export/excel ─────────────────────────────────────
+// -- GET /api/export/excel
 
 #[get("/export/excel")]
-pub async fn export_excel(db: web::Data<Database>) -> Result<HttpResponse, Error> {
-    let mut conn = db.pool.get().map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.connection_error").to_string()))?;
+pub async fn export_excel(container: web::Data<AppContainer>) -> Result<HttpResponse, Error> {
+    let (all_slots, all_movements) = container
+        .run(|conn| {
+            let s: Vec<Slot> = slots::table
+                .order((slots::street.asc(), slots::lane.asc(), slots::position.asc()))
+                .select(Slot::as_select())
+                .load(conn)?;
 
-    let Ok((all_slots, all_movements)) = web::block(move || -> Result<_, diesel::result::Error> {
-        let s: Vec<Slot> = slots::table
-            .order((slots::street.asc(), slots::lane.asc(), slots::position.asc()))
-            .select(Slot::as_select())
-            .load(&mut conn)?;
+            let m: Vec<Movement> = movements::table
+                .order(movements::created_at.desc())
+                .limit(1000)
+                .select(Movement::as_select())
+                .load(conn)?;
 
-        let m: Vec<Movement> = movements::table
-            .order(movements::created_at.desc())
-            .limit(1000)
-            .select(Movement::as_select())
-            .load(&mut conn)?;
-
-        Ok((s, m))
-    })
-    .await
-    .map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.error").to_string()))? else {
-        return Err(actix_web::error::ErrorInternalServerError(t!("database.error").to_string()));
-    };
+            Ok::<_, diesel::result::Error>((s, m))
+        })
+        .await
+        .map_err(|_| actix_web::error::ErrorInternalServerError(t!("database.error").to_string()))?;
 
     // Criar CSV simples como fallback
     let csv_data = build_csv(&all_slots, &all_movements);
@@ -43,7 +40,7 @@ pub async fn export_excel(db: web::Data<Database>) -> Result<HttpResponse, Error
         .body(csv_data))
 }
 
-// ── CSV builder ─────────────────────────────────────────────
+// -- CSV builder 
 
 fn build_csv(slot_data: &[Slot], mov_data: &[Movement]) -> String {
     let mut csv = String::new();

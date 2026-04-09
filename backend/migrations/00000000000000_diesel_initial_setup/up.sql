@@ -34,3 +34,12 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Extension for case-insensitive text
+CREATE EXTENSION IF NOT EXISTS citext;
+-- Extension for UUID generation
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- Extension for UUID generation
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Extension for unaccent
+CREATE EXTENSION IF NOT EXISTS unaccent;

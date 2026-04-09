@@ -100,8 +100,7 @@
 
 <script setup lang="ts">
 definePageMeta({ 
-  layout: 'default',
-  middleware: ['auth']
+  layout: 'default'
 })
 const { push } = useAlerts()
 const { t } = useI18n()

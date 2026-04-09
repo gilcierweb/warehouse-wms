@@ -76,8 +76,7 @@
 
 <script setup lang="ts">
 definePageMeta({
-  layout: 'default',
-  middleware: ['auth']
+  layout: 'default'
 })
 
 const config = useRuntimeConfig()
@@ -87,7 +86,7 @@ const { push } = useAlerts()
 const testing = ref(false)
 const logs = ref<Array<{ time: string; message: string; type: string }>>([])
 
-const wsUrl = computed(() => `${config.public.wsBase}/ws/live`)
+const wsUrl = computed(() => `${config.public.wsBase}/ws`)
 const apiBase = computed(() => config.public.apiBase)
 const connectedClass = computed(() => ws.connected.value ? 'status-online' : 'status-offline')
 
@@ -129,7 +128,7 @@ async function testConnection() {
       addLog('Tentando conectar WebSocket...', 'info')
       
       // Criar WebSocket manual para diagnóstico
-      const testWs = new WebSocket(`${config.public.wsBase}/ws/live`)
+      const testWs = new WebSocket(`${config.public.wsBase}/ws`)
       
       testWs.onopen = () => {
         addLog('WebSocket aberto com sucesso', 'success')

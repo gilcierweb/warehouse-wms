@@ -3,12 +3,16 @@ name = "backend"
 version = "0.1.0"
 edition = "2024"
 authors = ["GilcierWeb", "GilcierWeb <gilcierweb@gmail.com>"]
+default-run = "backend"
 
 [package.metadata.i18n]
 available-locales = ["en", "pt-BR"]
 default-locale = "pt-BR"
 load-path = "locales"
 
+[[bin]]
+name = "seed"
+path = "src/bin/seed.rs"
 
 [profile.release]
 lto = true
@@ -24,7 +28,7 @@ actix-ws = "0.4.0"
 actix-rt = "2.11.0"
 argon2 = "0.5.3" 
 chrono = { version = "0.4.44", features = ["serde"] }
-diesel = { version = "2.3.7", features = ["postgres", "r2d2", "chrono", "uuid", "ipnet-address","network-address", "numeric", "64-column-tables"] }
+diesel = { version = "2.3.7", features = ["postgres", "r2d2", "chrono", "uuid", "ipnet-address","network-address", "numeric", "64-column-tables", "serde_json"] }
 rand = "0.8"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
@@ -34,5 +38,34 @@ tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 futures-util = "0.3.32"
 thiserror = "2.0.18"
 rust_xlsxwriter = "0.94.0"
-rust-i18n = "3.1.5"
 async-trait = "0.1.89"
+totp-rs = { version = "5", features = ["qr", "zeroize", "gen_secret"] }
+# Redis
+redis              = { version = "1.1.0", features = ["tokio-comp", "connection-manager"] }
+deadpool-redis     = "0.23.0"
+# -- Logging / Tracing
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-actix-web  = "0.7"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+# -- Rate Limiting
+actix-governor = "0.10.0"
+dotenvy = "0.15.7"
+governor = "0.10.4"
+# -- Swagger
+utoipa = { version = "5.4.0", features = ["actix_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["actix-web"] }
+urlencoding = "2.1"
+rust-i18n = "3.1.5"
+faker-rust = "0.1.0"
+unicode-normalization = "0.1.25"
+validator = { version = "0.16", features = ["derive"] }
+futures = "0.3"
+sha2 = "0.10"
+derive_more = "0.99"
+ipnet = { version = "2.9", features = ["serde"] }
+
+[dev-dependencies]
+actix-rt = "2.9"
+mockall = "0.12"
+claims = "0.7"

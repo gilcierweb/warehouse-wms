@@ -28,6 +28,7 @@
     "admin": "Administrador",
     "or": "ou",
     "invalidCredentials": "Credenciais inválidas",
+    "emailNotConfirmed": "Email não confirmado. Verifique sua caixa de entrada.",
     "sessionExpired": "Sessão expirada. Faça login novamente.",
     "passwordMismatch": "As senhas não coincidem",
     "invalidOrExpiredToken": "Token inválido ou expirado",
@@ -159,7 +160,12 @@
     "apiOffline": "API offline — usando dados locais de demonstração",
     "slotNotFound": "Posição não encontrada",
     "slotOccupied": "Posição já ocupada",
-    "slotFree": "Posição já está livre"
+    "slotFree": "Posição já está livre",
+    "auth": {
+      "registrationFailed": "Falha no registro",
+      "loginFailed": "Falha no login",
+      "unknown": "Erro desconhecido"
+    }
   },
   "validation": {
     "required": "Campo obrigatório",

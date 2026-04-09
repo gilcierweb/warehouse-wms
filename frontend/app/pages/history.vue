@@ -70,8 +70,7 @@
 import type { Movement } from '~/types'
 
 definePageMeta({ 
-  layout: 'default',
-  middleware: ['auth']
+  layout: 'default'
 })
 
 const api = useWarehouseApi()
