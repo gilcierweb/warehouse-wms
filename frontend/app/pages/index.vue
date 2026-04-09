@@ -113,7 +113,8 @@
 import type { Slot } from '~/types'
 
 definePageMeta({ 
-  layout: 'default'
+  layout: 'default',
+  requiresAuth: true
 })
 
 const api = useWarehouseApi()

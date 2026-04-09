@@ -233,7 +233,8 @@ import type { Slot, CreateSlotRequest, UpdateSlotRequest } from '~/types'
 // Page meta
 definePageMeta({
   layout: 'default',
-  title: 'Slots CRUD'
+  title: 'Slots CRUD',
+  requiresAuth: true
 })
 
 // Composables

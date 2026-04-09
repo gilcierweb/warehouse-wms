@@ -1,21 +1,12 @@
 // Plugin client-only para inicializar autenticação e WebSocket
-// Este plugin roda uma vez quando o app inicia (no primeiro carregamento)
-// Não deve rodar novamente em navegações SPA subsequentes
 import { useAuthStore } from '~/stores/auth'
 import { useAuth } from '~/composables/useAuth'
 import { useWarehouseWS } from '~/composables/useWarehouseWS'
 
-let initialized = false
-
 export default defineNuxtPlugin(async (nuxtApp) => {
-  if (initialized) {
-    console.log('[AuthPlugin] Already initialized, skipping')
-    return
-  }
-  initialized = true
-  
   const authStore = useAuthStore()
   const { connect, isConnected } = useWarehouseWS()
+  const router = useRouter()
   
   console.log('[AuthPlugin] Initializing...', {
     hasUser: !!authStore.user,
@@ -41,6 +32,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     return false
   }
 
+  // Try to connect on init
   if (authStore.user) {
     if (!authStore.accessToken) {
       console.log('[AuthPlugin] Has user but no token, refreshing...')
@@ -60,9 +52,25 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     }
   }
 
+  // Try to connect on app mounted
   nuxtApp.hook('app:mounted', () => {
     console.log('[AuthPlugin] App mounted, checking WS status...')
-    if (!isConnected()) {
+    tryConnectWS()
+  })
+
+  // Try to connect on route change (handles post-login scenario)
+  router.beforeEach((to, from, next) => {
+    if (authStore.user && authStore.accessToken && !isConnected()) {
+      console.log('[AuthPlugin] Route change with user, connecting WS...')
+      tryConnectWS()
+    }
+    next()
+  })
+
+  // Also watch for user changes (in case user is set after plugin runs)
+  watch(() => authStore.user, (newUser) => {
+    if (newUser && authStore.accessToken && !isConnected()) {
+      console.log('[AuthPlugin] User changed, connecting WS...')
       tryConnectWS()
     }
   })

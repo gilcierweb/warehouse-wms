@@ -76,7 +76,8 @@
 
 <script setup lang="ts">
 definePageMeta({
-  layout: 'default'
+  layout: 'default',
+  requiresAuth: true
 })
 
 const config = useRuntimeConfig()

@@ -155,6 +155,7 @@ definePageMeta({
 const { login, initAuth, isAuthenticated, user } = useAuth()
 const { push } = useAlerts()
 const { t } = useI18n()
+const { connect: connectWS, isConnected } = useWarehouseWS()
 
 const email = ref('')
 const password = ref('')
@@ -171,6 +172,13 @@ const handleLogin = async () => {
     await login(email.value, password.value)
     
     push({ type: 'success', message: 'Welcome back!' })
+
+    console.log('[Login] Login success, isConnected:', isConnected())
+    if (!isConnected()) {
+      console.log('[Login] Calling connectWS()')
+      connectWS()
+      console.log('[Login] After connectWS, isConnected:', isConnected())
+    }
 
     const redirect = sessionStorage.getItem('redirectAfterLogin')
     
