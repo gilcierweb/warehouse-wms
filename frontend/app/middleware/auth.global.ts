@@ -2,7 +2,7 @@
 
 import type { AuthRouteMeta } from '~/types'
 import { defineNuxtRouteMiddleware, navigateTo, useRequestEvent, useRequestHeaders } from '#app'
-import { appendResponseHeader } from 'h3'
+import { appendHeader } from 'h3'
 import { useAuthStore } from '~/stores/auth'
 
 import type { Role } from '~/types/auth'
@@ -102,8 +102,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         
         const event = useRequestEvent()
         if (event && cookiesArray.length > 0) {
-          for (const c of cookiesArray) {
-            if (c) appendResponseHeader(event, 'set-cookie', c)
+          for (const cookieHeader of cookiesArray) {
+            if (cookieHeader) appendHeader(event, 'set-cookie', cookieHeader)
           }
         }
         
