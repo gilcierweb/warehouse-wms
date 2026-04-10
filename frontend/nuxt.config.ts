@@ -36,11 +36,7 @@ runtimeConfig: {
             // @ts-ignore
             wsUrl: process.env.NUXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws',
             // @ts-ignore
-            cdnUrl: process.env.NUXT_PUBLIC_CDN_URL || 'https://cdn.simple-chat.com',
-            // @ts-ignore
-            stripeKey: process.env.NUXT_PUBLIC_STRIPE_KEY || '',
-            // @ts-ignore
-            appName: process.env.NUXT_PUBLIC_APP_NAME || 'Simple Chat',
+            appName: process.env.NUXT_PUBLIC_APP_NAME || 'Warehouse WMS',
             // @ts-ignore
             apiKey: process.env.NUXT_PUBLIC_API_KEY || 'dev-api-key-change-in-production',
         },

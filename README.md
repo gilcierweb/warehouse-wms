@@ -8,13 +8,13 @@ Complete Warehouse Management System (WMS) with Rust backend (Actix-Web) and Nux
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Warehouse WMS                             │
+│                    Warehouse WMS                            │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐         ┌─────────────┐                    │
 │  │  Frontend   │         │   Backend   │                    │
 │  │  Nuxt.js 4  │◄───────►│  Actix-Web  │                    │
 │  │   Vue 3     │  HTTP   │    Rust     │                    │
-│  │  WS Client  │◄───────►│  WS Server  │                    │
+│  │  WS Client  │◄───────►│  WS Server  │ :8080              │
 │  └─────────────┘         └──────┬──────┘                    │
 │        :3000                    │                           │
 │                                 │                           │
@@ -72,31 +72,38 @@ Complete Warehouse Management System (WMS) with Rust backend (Actix-Web) and Nux
 ```
 warehouse-wms/
 ├── backend/                    # Rust API + Actix-Web
-│   ├── src/
-│   │   ├── main.rs            # Server bootstrap
-│   │   ├── auth/              # Authentication logic
-│   │   ├── config/            # Environment configuration
-│   │   ├── controllers/       # Route handlers (slots, movements, auth, export)
-│   │   ├── db/                # Database pool and connection
-│   │   ├── errors/            # Error handling
-│   │   ├── middleware/        # JWT auth middleware
-│   │   ├── models/            # Data models (User, Slot, Movement, etc.)
-│   │   ├── repositories/      # Database access layer
-│   │   ├── routes/            # Route definitions
-│   │   └── ws/                # WebSocket handlers
+│   ├── locales/               # i18n localizations
 │   ├── migrations/            # Diesel migrations
+│   ├── src/
+│   │   ├── auth/              # Authentication logic
+│   │   ├── bin/               # CLI binaries (e.g., seed.rs)
+│   │   ├── config/            # Environment configuration
+│   │   ├── controllers/       # Route handlers
+│   │   ├── db/                # Database pool and schema
+│   │   ├── errors/            # Error handling
+│   │   ├── middleware/        # Middlewares (Auth, Rate Limit, etc.)
+│   │   ├── models/            # Data models
+│   │   ├── repositories/      # Database access layer
+│   │   ├── routes/            # Route definitions and OpenAPI cfg
+│   │   ├── services/          # Business logic
+│   │   ├── utils/             # Utility functions
+│   │   └── ws/                # WebSocket handlers
 │   ├── Cargo.toml
 │   └── Dockerfile
 ├── frontend/                  # Nuxt.js 4 SPA
 │   ├── app/                   # Nuxt app directory
-│   │   ├── app.vue            # Root component
 │   │   ├── assets/            # CSS and assets
 │   │   ├── components/        # Vue components
 │   │   ├── composables/       # Vue composables
 │   │   ├── layouts/           # Page layouts
+│   │   ├── middleware/        # Nuxt middlewares (auth checking)
 │   │   ├── pages/             # Route pages
+│   │   ├── plugins/           # Vue plugins
+│   │   ├── stores/            # Pinia state management
 │   │   └── types/             # TypeScript types
+│   ├── i18n/                  # Nuxt i18n locales
 │   ├── public/                # Static assets
+│   ├── server/                # Nuxt Nitro server/API routes
 │   ├── nuxt.config.ts
 │   ├── package.json
 │   └── Dockerfile
@@ -119,6 +126,7 @@ warehouse-wms/
 - **Operation Undo**: Revert last movement per slot
 
 ### Reports and Export
+- **Data Analysis**: In-depth warehouse analytics and data reporting
 - **Real-time Dashboard**: Occupancy statistics by street
 - **Excel Export**: 3 tabs (slot map, history, summary)
 - **Capacity Alerts**: Notification when configurable threshold is reached
@@ -127,6 +135,9 @@ warehouse-wms/
 - **JWT Token**: Stateless authentication
 - **Roles**: admin, operator, viewer
 - **Secure WebSocket**: Authenticated connection for real-time updates
+
+### System Administration
+- **Database Seeding**: Built-in script (`seed`) to populate database with roles, users, and warehouse slots for rapid development and testing.
 
 ---
 
@@ -176,6 +187,9 @@ export DATABASE_URL=postgres://username:password@localhost:5432/warehouse_wms_de
 # Run migrations
 diesel migration run
 
+# Populate database with seed data
+cargo run --bin seed
+
 # Start server in release mode
 cargo run --release
 # Start server in debug mode
@@ -208,21 +222,45 @@ Authorization: Bearer <token>
 
 ### Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register user |
-| POST | `/api/auth/login` | Login and get token |
-| GET | `/api/auth/me` | Logged user data |
-| GET | `/api/slots` | List all slots |
-| GET | `/api/slots/:id` | Slot details |
-| POST | `/api/slots/:id/entry` | Register entry |
-| POST | `/api/slots/:id/exit` | Register exit |
-| GET | `/api/stats` | Occupancy statistics |
-| GET | `/api/movements` | Movement history |
-| POST | `/api/movements/undo` | Undo last movement |
-| GET | `/api/export/excel` | Download Excel report |
-| GET | `/health` | Health check |
-| WS | `/ws/live` | WebSocket for real-time updates |
+| Group | Method | Endpoint | Description |
+|-------|--------|----------|-------------|
+| **Auth** | POST | `/api/v1/auth/register` | Register user |
+| | POST | `/api/v1/auth/login` | Login and get token |
+| | POST | `/api/v1/auth/logout` | Logout active session |
+| | GET | `/api/v1/auth/confirm` | Confirm account via token |
+| | POST | `/api/v1/auth/refresh` | Refresh access token |
+| | POST | `/api/v1/auth/recover` | Request password recovery |
+| | POST | `/api/v1/auth/reset` | Reset password |
+| | POST | `/api/v1/auth/2fa/setup` | Setup 2FA |
+| | POST | `/api/v1/auth/2fa/enable` | Enable 2FA |
+| | POST | `/api/v1/auth/2fa/disable` | Disable 2FA |
+| | POST | `/api/v1/auth/change-password` | Change password |
+| | GET | `/api/v1/auth/me` | Legacy: get logged user data |
+| **Users** | GET | `/api/v1/users/me` | Get current user's profile |
+| | PATCH | `/api/v1/users/me` | Update current user's profile |
+| | GET | `/api/v1/users/me/sessions` | List all active sessions |
+| | DELETE | `/api/v1/users/me/sessions/:id` | Revoke a specific session |
+| | DELETE | `/api/v1/users/me` | Delete own account |
+| **Slots** | GET | `/api/v1/slots` | List all slots |
+| | POST | `/api/v1/slots` | Create a new slot |
+| | GET | `/api/v1/slots/:address` | Get slot by address (e.g. A-1-N1) |
+| | GET | `/api/v1/slots/:id` | Get slot by UUID |
+| | PUT | `/api/v1/slots/:id` | Update slot by UUID |
+| | DELETE | `/api/v1/slots/:id` | Delete slot by UUID |
+| | POST | `/api/v1/slots/:address/entry`| Register entry into slot |
+| | POST | `/api/v1/slots/:address/exit` | Register exit from slot |
+| | GET | `/api/v1/stats` | Occupancy statistics |
+| **Activity** | GET | `/api/v1/movements` | List all movements |
+| | GET | `/api/v1/movements/filtered`| List filtered movements |
+| | POST | `/api/v1/movements` | Create movement directly |
+| | GET | `/api/v1/movements/:id` | Get movement by UUID |
+| | PUT | `/api/v1/movements/:id` | Update movement by UUID |
+| | DELETE | `/api/v1/movements/:id` | Delete movement by UUID |
+| | POST | `/api/v1/movements/undo`| Undo last movement |
+| **Reports** | GET | `/api/v1/export/excel` | Download Excel report |
+| **System** | GET | `/health` | Health check |
+| | WS | `/ws` | WebSocket connection point |
+| | GET | `/ws/token` | Obtain short-lived WS token |
 
 ### WebSocket Events
 
@@ -245,19 +283,22 @@ Authorization: Bearer <token>
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | — | PostgreSQL connection string |
+| `REDIS_URL` | `redis://127.0.0.1:6379` | Redis connection string |
 | `HOST` | `0.0.0.0` | Bind interface |
 | `PORT` | `8080` | HTTP port |
+| `FRONTEND_URL` | `http://localhost:3000` | Allowed origin for CORS |
+| `API_KEY` | `dev-api-key-change-in-production` | Security key for external API access |
 | `JWT_SECRET` | — | JWT secret key |
-| `JWT_EXPIRY_HOURS` | `8` | Token validity in hours |
-| `ALERT_THRESHOLD` | `80` | % for capacity alert |
+| `DB_POOL_SIZE` | `10` | Database connection pool size |
 | `RUST_LOG` | `info` | Log level |
-| `CORS_ORIGINS` | `http://localhost:3000` | Allowed CORS origins |
 
 ### Frontend
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `API_BASE` | `http://localhost:8080` | API base URL |
-| `WS_BASE` | `ws://localhost:8080` | WebSocket base URL |
+| `NUXT_PUBLIC_API_BASE` | `http://localhost:8080/api/v1` | Backend API base URL |
+| `NUXT_PUBLIC_WS_URL` | `ws://localhost:8080/ws` | WebSocket base URL |
+| `NUXT_PUBLIC_APP_NAME` | `Warehouse WMS` | Application title |
+| `NUXT_PUBLIC_API_KEY` | `dev-api-key-change-in-production` | Key to access backend API |
 | `NUXT_PORT` | `3000` | Nuxt server port |
 
 ---
@@ -272,8 +313,9 @@ docker compose logs -f frontend
 # Rebuild only backend
 docker compose up --build backend
 
-# Run migrations
+# Run migrations and database seed
 docker compose exec backend diesel migration run
+docker compose exec backend cargo run --bin seed
 
 # Shell into container
 docker compose exec backend sh
@@ -292,17 +334,17 @@ docker compose down -v
 
 ```bash
 # Create admin user
-curl -X POST http://localhost:8080/api/auth/register \
+curl -X POST http://localhost:8080/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","email":"admin@wms.local","password":"Password@123","role":"admin"}'
 
 # Login
-curl -X POST http://localhost:8080/api/auth/login \
+curl -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"Password@123"}'
 
 # List slots
-curl http://localhost:8080/api/slots \
+curl http://localhost:8080/api/v1/slots \
   -H "Authorization: Bearer <token>"
 ```
 
