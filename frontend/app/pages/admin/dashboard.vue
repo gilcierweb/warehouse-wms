@@ -108,7 +108,8 @@ const store = useWarehouseStore()
 const { streets, globalStats } = store
 const { t } = useI18n()
 
-const now = computed(() =>
+// useState garante o mesmo timestamp no SSR e no Client (sem hydration mismatch)
+const now = useState('dashboard-now', () =>
   new Intl.DateTimeFormat('pt-BR', { timeStyle: 'medium' }).format(new Date())
 )
 
@@ -122,7 +123,8 @@ const busiestStreet = computed(() =>
   [...streets.value].sort((a, b) => b.pct - a.pct)[0] ?? { name: '—', pct: 0 }
 )
 
-const movementsToday = ref(Math.floor(Math.random() * 120) + 40)
+// useState garante que o número gerado no backend seja reaproveitado no client
+const movementsToday = useState('dashboard-movements', () => Math.floor(Math.random() * 120) + 40)
 </script>
 
 <style scoped>

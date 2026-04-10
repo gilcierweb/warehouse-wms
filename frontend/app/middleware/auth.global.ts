@@ -81,9 +81,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     } else {
       // On Server (SSR): Tentar refresh via proxy
       try {
-        
-        // O proxy /api/proxy vai usar useRequestHeaders(['cookie']) para pegar cookies
-        const data = await $fetch<{ access_token: string, refresh_token: string }>(
+        const response = await $fetch.raw<{ access_token: string, refresh_token: string }>(
           '/api/proxy/auth/refresh',
           {
             method: 'POST',
@@ -92,9 +90,32 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
           }
         )
         
-        authStore.setTokens(data.access_token, data.refresh_token)
-      } catch {
-        // SSR refresh falhou - cliente vai tentar
+        let cookiesArray: string[] = []
+        if (typeof response.headers.getSetCookie === 'function') {
+          cookiesArray = response.headers.getSetCookie()
+        } else {
+          const fallback = response.headers.get('set-cookie')
+          if (fallback) cookiesArray = [fallback]
+        }
+        
+        const event = useRequestEvent()
+        if (event && event.node && event.node.res && cookiesArray.length > 0) {
+          let existing = event.node.res.getHeader('set-cookie') as string[] | string | undefined
+          if (!existing) existing = []
+          if (typeof existing === 'string') existing = [existing]
+          
+          for (const c of cookiesArray) {
+            if (c) existing.push(c)
+          }
+          event.node.res.setHeader('set-cookie', existing)
+        }
+        
+        const data = response._data
+        if (data) {
+          authStore.setTokens(data.access_token, data.refresh_token)
+        }
+      } catch (e: any) {
+        // Fallback silencioso para client side auth
       } finally {
         authStore.isInitialHydration = false
       }
@@ -105,9 +126,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
   const isAuthenticated = authStore.isAuthenticated && !authStore.isTokenExpired
 
-  // On the server, if we have a user object, we treat them as "authenticated for SSR purposes"
-  // This prevents the server from redirecting to login before the client-side silent refresh
-  // has a chance to run and obtain a fresh accessToken via HttpOnly cookies.
+  // On the server, treat them as "authenticated for SSR purposes" se tivermos um user persistido.
+  // Isso bloqueia redirecionamento cego até o estado ser processado.
   const isServerWithUser = import.meta.server && !!authStore.user
 
   const userRoles = (authStore.userRoles || []) as Role[]

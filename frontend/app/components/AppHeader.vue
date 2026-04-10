@@ -1,8 +1,10 @@
 <template>
   <header class="app-header">
     <div class="header-brand">
-      <h1 class="brand-title">{{ $t('header.brandTitle') }}</h1>
-      <span class="brand-subtitle">{{ $t('header.brandSubtitle') }}</span>
+      <NuxtLink to="/">
+        <h1 class="brand-title">{{ $t('header.brandTitle') }}</h1>
+        <span class="brand-subtitle">{{ $t('header.brandSubtitle') }}</span>
+      </NuxtLink>
     </div>
 
     <nav class="header-nav">

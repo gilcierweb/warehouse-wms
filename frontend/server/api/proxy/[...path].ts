@@ -53,15 +53,21 @@ export default defineEventHandler(async (event) => {
     })
     
     // 6. Forward cookies do backend para o cliente
-    const setCookieHeaders = response.headers.get('set-cookie')
-    if (setCookieHeaders) {
-      const cookiesArray = Array.isArray(setCookieHeaders) 
-        ? setCookieHeaders 
-        : [setCookieHeaders]
+    let cookiesArray: string[] = []
+    if (typeof response.headers.getSetCookie === 'function') {
+      cookiesArray = response.headers.getSetCookie()
+    } else {
+      const fallback = response.headers.get('set-cookie')
+      if (fallback) cookiesArray = [fallback]
+    }
       
-      for (const cookie of cookiesArray) {
-        appendResponseHeader(event, 'set-cookie', cookie)
-      }
+    for (let cookie of cookiesArray) {
+      if (!cookie) continue
+      // Garante que o cookie funcione localmente em todo o host de proxy no frontend
+      cookie = cookie.replace(/Path=[^;]+/gi, 'Path=/')
+      // Remove Domain para o browser basear no host da URL de proxy atual (localhost)
+      cookie = cookie.replace(/;\s*Domain=[^;]+/gi, '')
+      appendResponseHeader(event, 'set-cookie', cookie)
     }
     
     // 7. Retornar resposta
