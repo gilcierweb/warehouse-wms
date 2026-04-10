@@ -1,7 +1,7 @@
 // Middleware específico para rotas /admin/*
 // Protege automaticamente todas as páginas do admin
 
-import { useAuthStore } from '~/stores/auth'
+import type { Role } from '~/types/auth'
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const authStore = useAuthStore()
@@ -11,9 +11,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return navigateTo(`/auth/login?redirect=${encodeURIComponent(to.fullPath)}`)
   }
   
-  // Verifica se tem role admin
-  const userRoles = authStore.userRoles
-  const hasAdminAccess = userRoles.includes('admin')
+  // Verifica se tem alguma role administrativa
+  const adminLikeRoles: Role[] = ['admin', 'seller', 'moderator']
+  const userRoles = (authStore.userRoles || []) as Role[]
+  
+  const hasAdminAccess = userRoles.some((r: Role) => adminLikeRoles.includes(r))
   
   if (!hasAdminAccess) {
     console.log('[AdminMiddleware] Access denied. User roles:', userRoles)

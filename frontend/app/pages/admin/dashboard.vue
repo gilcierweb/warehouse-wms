@@ -98,9 +98,10 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ 
+definePageMeta({
   layout: 'default',
-  requiresAuth: true
+  requiresAuth: true,
+  middleware: 'admin'
 })
 
 const store = useWarehouseStore()

@@ -27,11 +27,9 @@ function getOrCreateState() {
 }
 
 function getWsUrl(): string {
-  if (import.meta.client) {
-    const config = useRuntimeConfig()
-    return `${config.public.wsBase}/ws`
-  }
-  return DEFAULT_WS_URL
+  const config = useRuntimeConfig()
+  const base = config.public.wsBase || 'ws://localhost:8080'
+  return `${base.replace(/\/$/, '')}/ws`
 }
 
 export const useWarehouseWS = () => {

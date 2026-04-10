@@ -28,8 +28,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters
   const isAuthenticated = computed(() => {
-    // Simply check if user exists - token refresh is handled separately
-    return !!user.value
+    // If we have a user and (token exists OR we are still hydrating), consider auth'd
+    return !!user.value && (!!accessToken.value || isInitialHydration.value)
   })
   
   const isTokenExpired = computed(() => {
@@ -53,9 +53,6 @@ export const useAuthStore = defineStore('auth', () => {
   // Actions
   function setUser(u: User | null) {
     user.value = u
-    if (u?.roles) {
-      userRoles.value = u.roles
-    }
   }
 
   function setProfile(p: Profile | null) {
@@ -66,15 +63,20 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = access
     refreshToken.value = refresh
     
+    // Parse JWT for user info and roles
     if (access) {
       try {
         const payload = parseJwt(access)
         userRoles.value = payload.roles || []
         
+        // Reconstruct minimal user from JWT if not already set
         if (!user.value && payload.sub) {
           user.value = {
             id: payload.sub,
             email: '',
+            confirmed_at: null,
+            totp_enabled: false,
+            created_at: '',
           }
         }
       } catch {
@@ -91,8 +93,10 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = null
     refreshToken.value = null
     userRoles.value = []
+    // Cookies are cleared automatically by pinia-plugin-persistedstate
   }
 
+  // Helper to parse JWT payload
   function parseJwt(token: string): JwtPayload {
     const parts = token.split('.')
     if (parts.length !== 3) {
@@ -131,10 +135,11 @@ export const useAuthStore = defineStore('auth', () => {
     isInitialHydration,
   }
 }, {
+  // Persistence via cookies - NUNCA persistir tokens!
+  // Tokens (access/refresh) ficam em memória (ref) ou HttpOnly cookies (backend)
   persist: {
-    // Tokens are NOT persisted here for security!
-    // Access token stays in memory
-    // Refresh token is in HttpOnly cookie (managed by backend)
-    pick: ['user', 'profile', 'userRoles']
+    pick: ['user', 'profile', 'userRoles'],  // Apenas dados públicos
+    storage: 'cookies'
+    // accessToken e refreshToken NÃO estão na lista - memória apenas
   }
 })

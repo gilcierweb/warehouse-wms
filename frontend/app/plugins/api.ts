@@ -1,8 +1,6 @@
-import { useAuthStore } from '~/stores/auth'
-
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
-  const baseURL = `${config.public.apiBase}/api`
+  const baseURL = config.public.apiBase || 'http://localhost:8080/api/v1'
   const apiKey = config.public.apiKey || 'dev-api-key-change-in-production'
 
   const apiFetch = async <T>(
@@ -39,16 +37,18 @@ export default defineNuxtPlugin((nuxtApp) => {
       })
       return response
     } catch (error: any) {
-      if (options.auth && error.statusCode === 401) {
+      if (options.auth && error.statusCode === 401 && authStore.refreshToken) {
         try {
-          const refreshData = await $fetch<any>(`${baseURL}/auth/refresh`, {
+          // Usar proxy /api/proxy para refresh (preserva cookies HttpOnly)
+          const refreshData = await $fetch<any>('/api/proxy/auth/refresh', {
             method: 'POST',
             headers: {
               'X-API-Key': apiKey,
+              ...(import.meta.server ? useRequestHeaders(['cookie']) : {})
             },
             credentials: 'include',
           })
-          authStore.setTokens(refreshData.access_token, null)
+          authStore.setTokens(refreshData.access_token, refreshData.refresh_token)
 
           const retryResponse = await $fetch<T>(`${baseURL}${url}`, {
             method: options.method || 'GET',
@@ -61,7 +61,7 @@ export default defineNuxtPlugin((nuxtApp) => {
           })
           return retryResponse
         } catch {
-          authStore.logout()
+          // Nao faz logout - apenas propaga o erro para o caller tratar
           throw createError({ statusCode: 401, statusMessage: 'Session expired' })
         }
       }

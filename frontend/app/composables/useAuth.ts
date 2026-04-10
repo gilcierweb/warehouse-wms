@@ -3,11 +3,19 @@
 import type { AuthResponse } from '~/types'
 import { useAuthStore } from '~/stores/auth'
 
+import type { Role } from '~/types/auth'
+
+interface LoginRequiresOtpResponse {
+    requires_otp: boolean
+    message?: string
+}
+
 /**
  * Authentication composable — handles login, register, token management.
+ * Uses Pinia store with cookie persistence (SSR-friendly via pinia-plugin-persistedstate/nuxt)
  */
 export const useAuth = () => {
-    const { $api } = useNuxtApp()
+    const config = useRuntimeConfig()
     const router = useRouter()
     const authStore = useAuthStore()
     const route = useRoute()
@@ -18,14 +26,14 @@ export const useAuth = () => {
     const { t } = useI18n()
 
     const accessToken = computed(() => authStore.accessToken)
+
     const isAuthenticated = computed(() => authStore.isAuthenticated)
-    const userRoles = computed(() => authStore.userRoles)
 
     async function register(email: string, password: string, passwordConfirmation?: string) {
         loading.value = true
         error.value = null
         try {
-            const res = await $api('/auth/register', {
+            const res = await $fetch('/api/proxy/auth/register', {
                 method: 'POST',
                 body: {
                     email,
@@ -46,17 +54,36 @@ export const useAuth = () => {
         loading.value = true
         error.value = null
         let loginSuccess = false
-        let targetPath = '/'
+        let targetPath = '/admin/dashboard'
 
         try {
-            const data = await $api<AuthResponse>('/auth/login', {
+            const data = await $fetch<AuthResponse | LoginRequiresOtpResponse>('/api/proxy/auth/login', {
                 method: 'POST',
                 body: { email, password, otp_code: otpCode || undefined },
+                credentials: 'include', // Crucial for HttpOnly cookies
             })
 
-            authStore.setTokens(data.access_token, data.refresh_token)
-            authStore.setUser(data.user)
+            if ('requires_otp' in data && data.requires_otp) {
+                throw {
+                    data: {
+                        message: data.message || '2FA required',
+                        requires_otp: true,
+                    },
+                }
+            }
 
+            // Type guard: agora sabemos que é AuthResponse
+            const authData = data as AuthResponse
+
+            // Store tokens in Pinia (access_token stays in memory)
+            authStore.setTokens(authData.access_token, authData.refresh_token)
+            authStore.setUser(authData.user)
+
+            // Upload keys if not yet done
+            const keyStore = useKeyStore()
+            await keyStore.ensureKeys(authData.access_token)
+
+            // Determine redirect target
             const redirect = route.query.redirect as string
             targetPath = redirect ? decodeURIComponent(redirect) : '/'
             loginSuccess = true
@@ -68,6 +95,7 @@ export const useAuth = () => {
             loading.value = false
         }
 
+        // Navigate after successful login (outside try-catch)
         if (loginSuccess) {
             return navigateTo(targetPath)
         }
@@ -77,16 +105,18 @@ export const useAuth = () => {
         const token = authStore.accessToken
         if (token) {
             try {
-                await $api('/auth/logout', {
+                await $fetch('/api/proxy/auth/logout', {
                     method: 'POST',
                     headers: {
                         Authorization: `Bearer ${token}`
                     },
+                    credentials: 'include', // Clear the backend HttpOnly cookie
                 })
             } catch {
             }
         }
 
+        // Clear everything via store (cookies cleared automatically)
         authStore.logout()
 
         if (!preventRedirect) {
@@ -100,14 +130,22 @@ export const useAuth = () => {
 
     async function refreshAccessToken(): Promise<string | null> {
         try {
-            const data = await $api<{ access_token: string }>('/auth/refresh', {
+            // Usar proxy /api/proxy para refresh (preserva cookies HttpOnly)
+            const data = await $fetch<{ access_token: string }>('/api/proxy/auth/refresh', {
                 method: 'POST',
-                body: authStore.refreshToken ? { refresh_token: authStore.refreshToken } : {},
+                headers: {
+                    'X-API-Key': config.public.apiKey,
+                    ...(import.meta.server ? useRequestHeaders(['cookie']) : {})
+                },
+                credentials: 'include',
             })
 
-            authStore.setTokens(data.access_token, authStore.refreshToken)
+            // Update tokens in store
+            authStore.setTokens(data.access_token, null)
+
             return data.access_token
         } catch {
+            // Nao faz logout - apenas retorna null para o caller tratar
             return null
         }
     }
@@ -116,7 +154,7 @@ export const useAuth = () => {
         loading.value = true
         error.value = null
         try {
-            return await $api('/auth/recover', {
+            return await $fetch('/api/proxy/auth/recover', {
                 method: 'POST',
                 body: { email },
             })
@@ -132,7 +170,7 @@ export const useAuth = () => {
         loading.value = true
         error.value = null
         try {
-            return await $api('/auth/reset', {
+            return await $fetch('/api/proxy/auth/reset', {
                 method: 'POST',
                 body: {
                     token,
@@ -148,25 +186,28 @@ export const useAuth = () => {
         }
     }
 
+    // Use $apiFetch from plugin - re-export with auth: true for convenience
+    const { $apiFetch } = useNuxtApp()
     const authFetch = <T>(url: string, opts: {
         method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
         body?: any
         headers?: Record<string, string>
-    } = {}) => $api<T>(url, { ...opts, auth: true })
+    } = {}) => $apiFetch<T>(url, { ...opts, auth: true })
 
-    async function initAuth(): Promise<void> {
-        if (!authStore.accessToken) return
-        
-        try {
-            const userData = await $api<any>('/auth/me', {
-                auth: true,
-            })
-            authStore.setUser(userData)
-        } catch {
-            authStore.logout()
-        } finally {
-            authStore.isInitialHydration = false
-        }
+    // Role helpers (non-breaking enhancements)
+    const userRoles = computed<Role[]>(() => (authStore.userRoles || []) as Role[])
+
+    const hasRole = computed(() => authStore.hasRole)
+    const hasAnyRole = computed(() => authStore.hasAnyRole)
+
+    const isBidder = computed(() => userRoles.value.includes('bidder'))
+    const isSeller = computed(() => userRoles.value.includes('seller'))
+    const isAdmin = computed(() => userRoles.value.includes('admin'))
+    const isModerator = computed(() => userRoles.value.includes('moderator'))
+
+    // Future-ready permission check (optional)
+    const can = (permission: string) => {
+        return authStore.permissions?.includes(permission) || isAdmin.value
     }
 
     return {
@@ -175,7 +216,18 @@ export const useAuth = () => {
         error,
         isAuthenticated,
         accessToken,
+
+        hasRole,
+        hasAnyRole,
         userRoles,
+
+        // Non-breaking additions
+        isBidder,
+        isSeller,
+        isAdmin,
+        isModerator,
+        can,
+
         register,
         login,
         logout,
@@ -183,6 +235,5 @@ export const useAuth = () => {
         refreshAccessToken,
         forgotPassword,
         resetPassword,
-        initAuth,
     }
 }

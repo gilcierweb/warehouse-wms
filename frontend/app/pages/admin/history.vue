@@ -69,9 +69,10 @@
 <script setup lang="ts">
 import type { Movement } from '~/types'
 
-definePageMeta({ 
+definePageMeta({
   layout: 'default',
-  requiresAuth: true
+  requiresAuth: true,
+  middleware: 'admin'
 })
 
 const api = useWarehouseApi()

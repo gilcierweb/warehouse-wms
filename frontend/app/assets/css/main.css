@@ -1,6 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 
+/* -- Performance: Restricted Scanning  */
+@source "../../../**/*.{vue,js,ts,jsx,tsx}";
+/* @source "../../../../node_modules/flyonui/flyonui.js"; */
+@source "../../node_modules/flyonui/dist/js/*.js"; /* Garante que o Tailwind processe o JS do FlyonUI */
+
 @plugin "flyonui";
 @import "flyonui/variants.css";
 @source "../node_modules/flyonui/flyonui.js";

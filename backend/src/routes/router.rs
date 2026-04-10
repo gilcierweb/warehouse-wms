@@ -25,7 +25,7 @@ pub fn config(
     // Authentication is done via JWT token in the first message
     .service(web::resource("/ws").route(web::get().to(crate::ws::server::ws_handler)))
     .service(
-        web::scope("/api")
+        web::scope("/api/v1")
             .wrap(crate::middleware::api_key_middleware::ApiKeyAuth::new(
                 app_config.api_key.clone(),
             ))

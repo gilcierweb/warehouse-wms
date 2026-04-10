@@ -99,9 +99,10 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ 
+definePageMeta({
   layout: 'default',
-  requiresAuth: true
+  requiresAuth: true,
+  middleware: 'admin'
 })
 const { push } = useAlerts()
 const { t } = useI18n()

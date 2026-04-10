@@ -1,7 +1,5 @@
 // app/composables/useApi.ts
-// SSR-friendly data fetching com useFetch
-
-import { useAuthStore } from '~/stores/auth'
+// SSR-friendly data fetching com useFetch - evita double fetch
 
 interface UseApiOptions {
   method?: 'get' | 'post' | 'put' | 'delete' | 'patch'
@@ -15,24 +13,50 @@ interface UseApiOptions {
   onResponseError?: (context: { response: any }) => void
 }
 
+/**
+ * useApi - Composable SSR-friendly para data fetching
+ * 
+ * Usa useFetch por baixo para:
+ * - Evitar double fetch (SSR + client)
+ * - Payload extraction automática
+ * - Reatividade nativa (data, pending, error, refresh)
+ * 
+ * @param url - Path da API (ex: '/auctions', '/auctions/123')
+ * @param options - Opções de fetch
+ * @returns { data, pending, error, refresh, execute }
+ * 
+ * @example
+ * // Em uma página - executa no SSR automaticamente
+ * const { data: auctions, pending, error, refresh } = useApi<Auction[]>('/auctions')
+ * 
+ * @example
+ * // Com opções
+ * const { data: auction } = useApi<Auction>('/auctions/123', {
+ *   server: true,
+ *   default: () => null,
+ * })
+ */
 export function useApi<T>(
   url: string | (() => string),
   options: UseApiOptions = {}
 ) {
   const config = useRuntimeConfig()
-  const baseURL = `${config.public.apiBase}/api`
   
+  // Usar o proxy interno para preservar cookies HttpOnly
+  const baseURL = '/api/proxy'
+  
+  // Headers com cookies do request original (importante para SSR)
   const headers = {
-    'X-API-Key': config.public.apiKey,
-    'Content-Type': 'application/json',
-    ...useRequestHeaders(['cookie', 'authorization']),
+    ...(import.meta.server ? useRequestHeaders(['cookie', 'authorization']) : {}),
     ...options.headers,
   }
   
-  const fullUrl = computed(() => {
+  // Construir URL completa
+  const fullUrl = computed<string | null>(() => {
     const path = typeof url === 'function' ? url() : url
-    if (!path || path === 'null' || path === 'undefined' || path === '') {
-      return ''
+    // Guarda contra path invalido (null, undefined, vazio, placeholder, invalid, ou empty)
+    if (!path || path === 'null' || path === 'undefined' || path === '' || path.includes('/invalid') || path.includes('/placeholder') || path.includes('/empty')) {
+      return null // Retorna null para impedir requisição inválida
     }
     const queryString = options.query 
       ? '?' + new URLSearchParams(options.query).toString()
@@ -40,14 +64,16 @@ export function useApi<T>(
     return `${baseURL}${path}${queryString}`
   })
   
+  // useFetch com configuração SSR-friendly
   const { data, pending, error, refresh, execute, status } = useFetch<T>(fullUrl, {
     method: (options.method || 'get') as any,
     headers,
     body: options.body,
-    server: options.server !== false,
-    immediate: options.immediate !== false,
+    server: options.server !== false, // Default: executa no SSR
+    immediate: options.immediate !== false, // Default: executa imediatamente
     watch: options.watch,
     default: options.default,
+    // Transformar erro para formato consistente
     onResponseError({ response }) {
       console.error('[useApi] Error:', response.status, response._data)
     },
@@ -56,7 +82,7 @@ export function useApi<T>(
   return {
     data,
     pending,
-    loading: pending,
+    loading: pending, // Alias para consistência
     error,
     refresh,
     execute,
@@ -64,6 +90,10 @@ export function useApi<T>(
   }
 }
 
+/**
+ * useApiLazy - Versão lazy (não executa automaticamente)
+ * Útil para ações de usuário (botões, submits)
+ */
 export function useApiLazy<T>(
   url: string | (() => string),
   options: UseApiOptions = {}
@@ -74,6 +104,10 @@ export function useApiLazy<T>(
   })
 }
 
+/**
+ * useAuthApi - useApi com autenticação obrigatória
+ * Redireciona para login se 401
+ */
 export function useAuthApi<T>(
   url: string | (() => string),
   options: UseApiOptions = {}
@@ -85,6 +119,8 @@ export function useAuthApi<T>(
     ...options,
     onResponseError({ response }) {
       if (response.status === 401) {
+        // Nao faz logout automatico - deixa o middleware/auth.global.ts tratar
+        // Apenas redireciona para login se necessario
         if (!authStore.isAuthenticated) {
           router.push('/auth/login')
         }

@@ -16,7 +16,10 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
 
-const PATH_COOKIE_HTTP_ONLY: &str = "/api";
+// Cookie path deve ser / para permitir SSR em todas as rotas
+// Se fosse /api, o browser só enviaria o cookie para requisições /api/*
+// e o SSR não conseguiria acessar o refresh_token em páginas como /admin/dashboard
+const PATH_COOKIE_HTTP_ONLY: &str = "/";
 // --Request/Response DTOs
 
 #[derive(Debug, Deserialize, Validate, ToSchema)]

@@ -152,7 +152,7 @@ definePageMeta({
   layout: 'auth'
 })
 
-const { login, initAuth, isAuthenticated, user } = useAuth()
+const { login, isAuthenticated, user } = useAuth()
 const { push } = useAlerts()
 const { t } = useI18n()
 const { connect: connectWS, isConnected } = useWarehouseWS()
@@ -186,7 +186,7 @@ const handleLogin = async () => {
       sessionStorage.removeItem('redirectAfterLogin')
       await navigateTo(redirect)
     } else {
-      await navigateTo('/')
+      await navigateTo('/admin/map')
     }
   } catch (err: any) {
     error.value = err?.data?.message || err?.message || t('auth.invalidCredentials')
@@ -197,8 +197,6 @@ const handleLogin = async () => {
 }
 
 onMounted(() => {
-  initAuth()
-  
   // Watch for auth state changes
   watch([isAuthenticated, user], ([newAuth, newUser]) => {
   }, { immediate: true })

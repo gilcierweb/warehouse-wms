@@ -41,11 +41,11 @@ const { push } = useAlerts()
 const { isAuthenticated, logout } = useAuth()
 
 const navItems = computed(() => [
-  { path: '/', label: t('menu.map'), icon: '◪' },
-  { path: '/dashboard', label: t('menu.dashboard'), icon: '▤' },
-  { path: '/history', label: t('menu.history'), icon: '◖' },
-  { path: '/slots-crud', label: t('menu.slotsCrud'), icon: '📦' },
-  { path: '/settings', label: t('menu.settings'), icon: '⚙' }
+  { path: '/admin/map', label: t('menu.map'), icon: '◪' },
+  { path: '/admin/dashboard', label: t('menu.dashboard'), icon: '▤' },
+  { path: '/admin/history', label: t('menu.history'), icon: '◖' },
+  { path: '/admin/slots-crud', label: t('menu.slotsCrud'), icon: '📦' },
+  { path: '/admin/settings', label: t('menu.settings'), icon: '⚙' }
 ])
 
 function isActive(path: string): boolean {
