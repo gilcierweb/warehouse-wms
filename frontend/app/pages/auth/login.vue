@@ -95,7 +95,7 @@
               <input type="checkbox" class="auth-checkbox" id="rememberMe" v-model="rememberMe" />
               <span class="auth-checkbox-text">{{ $t('auth.rememberMe') }}</span>
             </label>
-            <NuxtLink to="/password_recovery" class="auth-link">{{ $t('auth.forgotPassword') }}</NuxtLink>
+            <NuxtLink to="/auth/password_recovery" class="auth-link">{{ $t('auth.forgotPassword') }}</NuxtLink>
           </div>
 
           <!-- Error Alert -->

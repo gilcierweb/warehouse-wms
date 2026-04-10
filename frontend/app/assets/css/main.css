@@ -6,11 +6,13 @@
 /* @source "../../../../node_modules/flyonui/flyonui.js"; */
 @source "../../node_modules/flyonui/dist/js/*.js"; /* Garante que o Tailwind processe o JS do FlyonUI */
 
-@plugin "flyonui";
+@plugin "flyonui" {
+  themes: light --default, dark --prefersdark;
+}
 @import "flyonui/variants.css";
 @source "../node_modules/flyonui/flyonui.js";
 
-@plugin "@iconify/tailwind4"; 
+@plugin "@iconify/tailwind4";
 
 /* Import Third-party override css */
 /* @import "flyonui/src/vendor/flatpickr.css"; */
@@ -55,11 +57,11 @@
   --radius-lg: 8px;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.admin-theme *, .admin-theme *::before, .admin-theme *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { font-size: 14px; }
+html.admin-theme { font-size: 14px; }
 
-body {
+.admin-theme body {
   font-family: var(--mono);
   background: var(--bg);
   color: var(--text);
@@ -68,12 +70,12 @@ body {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--bg-1); }
-::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+.admin-theme ::-webkit-scrollbar { width: 4px; height: 4px; }
+.admin-theme ::-webkit-scrollbar-track { background: var(--bg-1); }
+.admin-theme ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
 
 /* Inputs */
-input, select, textarea {
+.admin-theme input, .admin-theme select, .admin-theme textarea {
   font-family: var(--mono);
   font-size: 13px;
   background: var(--bg-2);
@@ -85,14 +87,14 @@ input, select, textarea {
   outline: none;
   transition: border-color .15s;
 }
-input:focus, select:focus {
+.admin-theme input:focus, .admin-theme select:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 2px rgba(34,197,94,.12);
 }
-input::placeholder { color: var(--text-3); }
+.admin-theme input::placeholder { color: var(--text-3); }
 
 /* Buttons */
-button {
+.admin-theme button {
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 500;
@@ -101,10 +103,10 @@ button {
   border-radius: var(--radius);
   transition: all .12s;
 }
-button:active { transform: scale(.97); }
+.admin-theme button:active { transform: scale(.97); }
 
 /* Tag/badge */
-.tag {
+.admin-theme .tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -115,11 +117,11 @@ button:active { transform: scale(.97); }
   border-radius: 3px;
   text-transform: uppercase;
 }
-.tag-green  { background: var(--green-bg);  color: var(--green); border: 1px solid var(--green-dim); }
-.tag-red    { background: var(--red-bg);    color: var(--red);   border: 1px solid var(--red-dim); }
-.tag-amber  { background: var(--amber-bg);  color: var(--amber); border: 1px solid #78350f; }
-.tag-blue   { background: var(--blue-bg);   color: var(--blue);  border: 1px solid #0c4a6e; }
-.tag-muted  { background: var(--bg-3);      color: var(--text-2); border: 1px solid var(--border); }
+.admin-theme .tag-green  { background: var(--green-bg);  color: var(--green); border: 1px solid var(--green-dim); }
+.admin-theme .tag-red    { background: var(--red-bg);    color: var(--red);   border: 1px solid var(--red-dim); }
+.admin-theme .tag-amber  { background: var(--amber-bg);  color: var(--amber); border: 1px solid #78350f; }
+.admin-theme .tag-blue   { background: var(--blue-bg);   color: var(--blue);  border: 1px solid #0c4a6e; }
+.admin-theme .tag-muted  { background: var(--bg-3);      color: var(--text-2); border: 1px solid var(--border); }
 
 /* Animations */
 @keyframes pulse-green {
@@ -142,4 +144,17 @@ button:active { transform: scale(.97); }
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+.page-enter-active,
+.page-leave-active {
+    @apply transition-all duration-300 ease-in-out;
+}
+
+.page-enter-from {
+    @apply opacity-0 translate-y-2;
+}
+
+.page-leave-to {
+    @apply opacity-0 -translate-y-2;
 }

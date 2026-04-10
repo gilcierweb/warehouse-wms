@@ -62,7 +62,7 @@
           </div>
           <h4 class="auth-success-title">{{ $t('auth.resetPassword') }}!</h4>
           <p class="auth-success-desc">{{ $t('auth.passwordResetSuccess') }}</p>
-          <NuxtLink to="/login" class="auth-submit-btn auth-submit-btn-link">
+          <NuxtLink to="/auth/login" class="auth-submit-btn auth-submit-btn-link">
             {{ $t('auth.signIn') }}
           </NuxtLink>
         </div>
@@ -151,7 +151,7 @@
         <!-- Login Link -->
         <p v-if="!success" class="auth-footer-text">
           {{ $t('auth.alreadyHaveAccount') }}
-          <NuxtLink to="/login" class="auth-link">
+          <NuxtLink to="/auth/login" class="auth-link">
             {{ $t('auth.signIn') }}
           </NuxtLink>
         </p>

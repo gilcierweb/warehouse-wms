@@ -22,6 +22,8 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       ],
     },
+     // Transitions disabled temporarily to debug blank screen issue
+        pageTransition: { name: 'fade', mode: 'out-in' }, 
   },
 
 runtimeConfig: {

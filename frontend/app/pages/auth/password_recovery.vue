@@ -92,7 +92,7 @@
             <p class="auth-token-label">Reset Token (for testing):</p>
             <code class="auth-token">{{ recoveryToken }}</code>
           </div>
-          <NuxtLink :to="`/password_reset?token=${recoveryToken}`" class="auth-submit-btn auth-submit-btn-link">
+          <NuxtLink :to="`/auth/password_reset?token=${recoveryToken}`" class="auth-submit-btn auth-submit-btn-link">
             Continue to Reset
           </NuxtLink>
         </div>
@@ -100,7 +100,7 @@
         <!-- Login Link -->
         <p class="auth-footer-text">
           {{ $t('auth.alreadyHaveAccount') }}
-          <NuxtLink to="/login" class="auth-link">
+          <NuxtLink to="/auth/login" class="auth-link">
             {{ $t('auth.signIn') }}
           </NuxtLink>
         </p>
@@ -108,7 +108,7 @@
         <!-- Register Link -->
         <p class="auth-footer-text">
           {{ $t('auth.newOnPlatform') }}
-          <NuxtLink to="/register" class="auth-link">
+          <NuxtLink to="/auth/register" class="auth-link">
             {{ $t('auth.createAccount') }}
           </NuxtLink>
         </p>

@@ -142,7 +142,7 @@
         <!-- Login Link -->
         <p class="auth-footer-text">
           {{ $t('auth.alreadyHaveAccount') }}
-          <NuxtLink to="/login" class="auth-link">
+          <NuxtLink to="/auth/login" class="auth-link">
             {{ $t('auth.signIn') }}
           </NuxtLink>
         </p>
