@@ -1,6 +1,8 @@
 // frontend/app/middleware/auth.global.ts
 
 import type { AuthRouteMeta } from '~/types'
+import { defineNuxtRouteMiddleware, navigateTo, useRequestEvent, useRequestHeaders } from '#app'
+import { appendResponseHeader } from 'h3'
 import { useAuthStore } from '~/stores/auth'
 
 import type { Role } from '~/types/auth'
@@ -99,15 +101,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         }
         
         const event = useRequestEvent()
-        if (event && event.node && event.node.res && cookiesArray.length > 0) {
-          let existing = event.node.res.getHeader('set-cookie') as string[] | string | undefined
-          if (!existing) existing = []
-          if (typeof existing === 'string') existing = [existing]
-          
+        if (event && cookiesArray.length > 0) {
           for (const c of cookiesArray) {
-            if (c) existing.push(c)
+            if (c) appendResponseHeader(event, 'set-cookie', c)
           }
-          event.node.res.setHeader('set-cookie', existing)
         }
         
         const data = response._data
